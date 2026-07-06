@@ -36,8 +36,13 @@ Expected result:
 3. Collect pellets and hearts until the Burst meter fills.
 4. Press Space and confirm ghosts become vulnerable.
 5. Eat a yellow can and confirm vulnerability also triggers.
-6. Clear the level and confirm the next level title appears.
-7. Get caught three times and confirm Enter restarts.
+6. After collecting at least one yellow can, collide with a normal ghost after vulnerability ends and confirm the hypno-rainbow save triggers for 5 seconds.
+7. Get caught three times or clear all 10 levels and confirm the leaderboard name form enables.
+8. Submit a score and confirm it appears in the top-10 list.
+9. Collapse and expand the side rules menu.
+10. Confirm the top-right version badge reads `v0.2.0`.
+11. Clear the level and confirm the next level title appears.
+12. Confirm Enter restarts after game over or victory.
 
 ## Next Build Pass
 

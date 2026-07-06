@@ -75,6 +75,9 @@ export class PacBeccaScene extends Phaser.Scene {
   private score = 0;
   private lives = 3;
   private burstMeter = 0;
+  private powerCansCollected = 0;
+  private wrongWaySaveUsed = false;
+  private hypnoRainbowUntilMs = 0;
   private ghostCombo = 0;
   private maze!: MazeModel;
   private level!: LevelConfig;
@@ -209,6 +212,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.modeCursor = 0;
     this.modeRemainingMs = this.level.modeTimeline[0].durationMs;
     this.frightenedUntilMs = 0;
+    this.hypnoRainbowUntilMs = 0;
     this.ghostCombo = 0;
     this.desiredDirection = "none";
     this.pausedAfterHit = false;
@@ -296,26 +300,39 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private createPowerCan(world: GridPoint): Phaser.GameObjects.Container {
     const body = this.add.graphics();
+    body.fillStyle(0xb7791f, 0.78);
+    body.fillEllipse(0, 8, 17, 6);
     body.fillStyle(0xfacc15, 1);
-    body.fillRoundedRect(-9, -7, 18, 14, 4);
-    body.lineStyle(2, 0xfef08a, 0.9);
-    body.strokeRoundedRect(-9, -7, 18, 14, 4);
-    body.fillStyle(0xfef08a, 0.8);
-    body.fillRoundedRect(-7, -4, 14, 8, 3);
-    body.lineStyle(1, 0x0f3a8a, 0.8);
-    body.strokeRoundedRect(-9, -7, 18, 14, 4);
+    body.fillRoundedRect(-9, -8, 18, 16, 4);
+    body.fillStyle(0xfff2a8, 1);
+    body.fillEllipse(0, -8, 17, 5);
+    body.fillStyle(0xd69e2e, 0.95);
+    body.fillEllipse(0, 8, 17, 5);
+    body.lineStyle(1, 0x8a5a06, 0.85);
+    body.strokeEllipse(0, -8, 17, 5);
+    body.strokeEllipse(0, 8, 17, 5);
+    body.lineStyle(2, 0xfef08a, 0.92);
+    body.lineBetween(-8, -6, -8, 6);
+    body.lineBetween(8, -6, 8, 6);
+    body.fillStyle(0xfef08a, 0.92);
+    body.fillRoundedRect(-7, -4, 14, 9, 3);
+    body.lineStyle(1, 0x1d4ed8, 0.9);
+    body.strokeRoundedRect(-7, -4, 14, 9, 3);
+    body.lineStyle(1, 0x7c4a03, 0.8);
+    body.strokeRoundedRect(-9, -8, 18, 16, 4);
 
     const label = this.add
       .text(0, 0, "BB", {
         fontFamily: "Inter, Arial, sans-serif",
-        fontSize: "7px",
+        fontSize: "6px",
         fontStyle: "900",
         color: "#1d4ed8"
       })
       .setOrigin(0.5);
 
-    const shine = this.add.rectangle(-4, -5, 7, 2, 0xffffff, 0.45);
-    return this.add.container(world.x, world.y, [body, shine, label]);
+    const tab = this.add.rectangle(0, -11, 7, 2, 0xe2e8f0, 0.9);
+    const shine = this.add.rectangle(-4, -5, 5, 2, 0xffffff, 0.45);
+    return this.add.container(world.x, world.y, [body, tab, shine, label]);
   }
 
   private createPlayer(): PlayerEntity {
@@ -492,7 +509,7 @@ export class PacBeccaScene extends Phaser.Scene {
     if (ghost.mood === "eaten") {
       return this.level.ghostTilesPerSecond + 2.2;
     }
-    if (this.time.now < this.frightenedUntilMs || ghost.mood === "stunned") {
+    if (this.isGhostVulnerable(ghost)) {
       return this.level.frightenedTilesPerSecond;
     }
     return this.level.ghostTilesPerSecond;
@@ -512,7 +529,7 @@ export class PacBeccaScene extends Phaser.Scene {
       );
     }
 
-    if (this.time.now < this.frightenedUntilMs || ghost.mood === "stunned") {
+    if (this.isGhostVulnerable(ghost)) {
       return chooseRandomTurn(
         this.maze,
         ghost.tile,
@@ -612,7 +629,26 @@ export class PacBeccaScene extends Phaser.Scene {
     this.player.ring.setScale(1 + openAmount * 0.035, 1 - openAmount * 0.02);
     this.player.shadow.setScale(1 + openAmount * 0.18, 0.92 - openAmount * 0.04);
     this.player.shadow.setAlpha(0.34 + openAmount * 0.16);
+    this.updateHypnoRainbowAppearance();
     this.drawPlayerMouth(openAmount);
+  }
+
+  private updateHypnoRainbowAppearance(): void {
+    if (!this.isHypnoRainbowActive()) {
+      this.player.sprite.clearTint();
+      this.player.ring.setStrokeStyle(3, 0xf9a8d4, 0.95);
+      this.player.gloss.setFillStyle(0xffffff, 0.2);
+      this.player.container.setScale(1);
+      return;
+    }
+
+    const phase = ((this.time.now % 650) / 650);
+    const tint = Phaser.Display.Color.HSVToRGB(phase, 0.9, 1).color;
+    const accent = Phaser.Display.Color.HSVToRGB((phase + 0.33) % 1, 0.85, 1).color;
+    this.player.sprite.setTint(tint);
+    this.player.ring.setStrokeStyle(5, accent, 1);
+    this.player.gloss.setFillStyle(0xffffff, 0.45);
+    this.player.container.setScale(1.08 + Math.sin(this.time.now / 60) * 0.05);
   }
 
   private drawPlayerMouth(openAmount: number): void {
@@ -676,6 +712,7 @@ export class PacBeccaScene extends Phaser.Scene {
     } else if (pickup === "power") {
       this.score += 50;
       this.addBurst(18);
+      this.powerCansCollected += 1;
       this.frightenGhosts(this.level.frightenedDurationMs);
     } else {
       this.score += 125;
@@ -716,6 +753,32 @@ export class PacBeccaScene extends Phaser.Scene {
     });
   }
 
+  private isHypnoRainbowActive(): boolean {
+    return this.time.now < this.hypnoRainbowUntilMs;
+  }
+
+  private isGhostVulnerable(ghost: GhostEntity): boolean {
+    return (
+      this.time.now < this.frightenedUntilMs ||
+      this.isHypnoRainbowActive() ||
+      ghost.mood === "stunned"
+    );
+  }
+
+  private canTriggerWrongWaySave(): boolean {
+    return this.powerCansCollected > 0 && !this.wrongWaySaveUsed;
+  }
+
+  private triggerHypnoRainbow(): void {
+    this.wrongWaySaveUsed = true;
+    this.hypnoRainbowUntilMs = this.time.now + 5000;
+    this.ghostCombo = 0;
+    this.reverseGhosts();
+    this.cameras.main.flash(180, 255, 0, 210);
+    this.cameras.main.shake(160, 0.004);
+    this.hud.message.setText("Wrong hit saved. Hypno rainbow for 5 seconds!");
+  }
+
   private checkCollisions(): void {
     const playerBounds = this.player.container.getBounds();
     this.ghosts.forEach((ghost) => {
@@ -730,7 +793,13 @@ export class PacBeccaScene extends Phaser.Scene {
         return;
       }
 
-      if (this.time.now < this.frightenedUntilMs || ghost.mood === "stunned") {
+      if (this.isGhostVulnerable(ghost)) {
+        this.eatGhost(ghost);
+        return;
+      }
+
+      if (this.canTriggerWrongWaySave()) {
+        this.triggerHypnoRainbow();
         this.eatGhost(ghost);
         return;
       }
@@ -775,6 +844,8 @@ export class PacBeccaScene extends Phaser.Scene {
     this.player.chompTimeMs = 0;
     this.player.sprite.setFrame(5);
     this.player.mouth.clear();
+    this.player.sprite.clearTint();
+    this.player.container.setScale(1);
     this.placeEntity(this.player, this.player.tile);
 
     this.ghosts.forEach((ghost) => {
@@ -790,6 +861,7 @@ export class PacBeccaScene extends Phaser.Scene {
       this.updateGhostAppearance(ghost);
     });
     this.frightenedUntilMs = 0;
+    this.hypnoRainbowUntilMs = 0;
   }
 
   private advanceLevel(): void {
@@ -805,6 +877,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private endGame(won: boolean): void {
     this.ended = true;
+    this.publishFinalScore(won);
     this.hud.message.setText(
       won
         ? "PacBecca cleared all 10 levels. Enter restarts."
@@ -812,10 +885,25 @@ export class PacBeccaScene extends Phaser.Scene {
     );
   }
 
+  private publishFinalScore(won: boolean): void {
+    window.dispatchEvent(
+      new CustomEvent("pacbecca:final-score", {
+        detail: {
+          score: this.score,
+          level: this.level.id,
+          won
+        }
+      })
+    );
+  }
+
   private restartGame(): void {
     this.score = 0;
     this.lives = 3;
     this.burstMeter = 0;
+    this.powerCansCollected = 0;
+    this.wrongWaySaveUsed = false;
+    this.hypnoRainbowUntilMs = 0;
     this.startLevel(0);
   }
 
@@ -835,7 +923,7 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
-    if (this.time.now < this.frightenedUntilMs || ghost.mood === "stunned") {
+    if (this.isGhostVulnerable(ghost)) {
       body.setFillStyle(0x6d28d9, 1);
       shine.setFillStyle(0xc4b5fd, 0.95);
       leftEye.setAlpha(1);
@@ -883,7 +971,11 @@ export class PacBeccaScene extends Phaser.Scene {
     this.hud.score.setText(`Score ${this.score.toLocaleString()}`);
     this.hud.level.setText(`Level ${level.id}/10  ${level.title}`);
     this.hud.lives.setText(`Lives ${"●".repeat(this.lives)}${"○".repeat(Math.max(0, 3 - this.lives))}`);
-    const mode = this.time.now < this.frightenedUntilMs ? "vulnerable" : this.globalMode;
+    const mode = this.isHypnoRainbowActive()
+      ? "hypno rainbow"
+      : this.time.now < this.frightenedUntilMs
+        ? "vulnerable"
+        : this.globalMode;
     this.hud.mode.setText(`Ghost mode ${mode}`);
     this.hud.meterBar.width = 220 * (this.burstMeter / BURST_METER_MAX);
     this.hud.burst.setText(

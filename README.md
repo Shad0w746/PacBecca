@@ -26,8 +26,11 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 
 - Clear all pellets, yellow power cans, and hearts to advance.
 - Yellow power cans with blue writing make ghosts vulnerable for a short time.
+- After collecting at least one yellow can, the first bad ghost hit triggers a 5-second hypno-rainbow save instead of losing a life.
 - Hearts and pellets fill the Becca Burst meter.
 - Becca Burst briefly makes every active ghost vulnerable.
+- Finish a run to submit your name to the local top-10 leaderboard.
+- Open the collapsible rules menu to review the objective, rules, and leaderboard.
 - The five ghosts have distinct target-tile behaviors:
   - Frosty: direct pursuer.
   - Megasen: ambushes ahead of Becca.
@@ -38,6 +41,7 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 ## Project Structure
 
 - `src/game/`: game loop, levels, maze parsing, ghost targeting, and pathfinding.
+- `src/ui/`: browser UI for the local leaderboard and page controls.
 - `public/assets/`: replaceable game assets.
 - `docs/`: research, design notes, IP boundaries, and test/next-step guide.
 - `.github/workflows/ci.yml`: basic CI for tests and production build.

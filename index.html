@@ -10,10 +10,54 @@
     <title>PacBecca</title>
   </head>
   <body>
+    <div id="version-badge" class="version-badge" aria-label="Game version"></div>
     <main class="app-shell" aria-label="PacBecca game">
       <section class="game-frame">
         <div id="game" aria-label="PacBecca canvas"></div>
       </section>
+      <aside class="side-panel" aria-label="PacBecca rules and leaderboard">
+        <details class="info-menu" open>
+          <summary>Rules and leaderboard</summary>
+          <section class="menu-section" aria-labelledby="objective-title">
+            <h2 id="objective-title">Objective</h2>
+            <p>
+              Clear all pickups through 10 levels while avoiding Frosty,
+              Megasen, Aspyn, Smeag, and Captain.
+            </p>
+          </section>
+          <section class="menu-section" aria-labelledby="rules-title">
+            <h2 id="rules-title">Rules</h2>
+            <ul>
+              <li>Pellets and hearts add score and fill Becca Burst.</li>
+              <li>Yellow cans make ghosts vulnerable.</li>
+              <li>After one yellow can, the first bad ghost hit triggers a 5-second hypno-rainbow save.</li>
+              <li>Space uses Becca Burst when the meter is full.</li>
+              <li>Clear every pickup to advance.</li>
+            </ul>
+          </section>
+          <section class="menu-section" aria-labelledby="leaderboard-title">
+            <h2 id="leaderboard-title">Top 10</h2>
+            <ol id="leaderboard-list" class="leaderboard-list"></ol>
+            <form id="leaderboard-form" class="leaderboard-form">
+              <label for="leaderboard-name">Name</label>
+              <div class="submit-row">
+                <input
+                  id="leaderboard-name"
+                  name="name"
+                  maxlength="14"
+                  autocomplete="nickname"
+                  placeholder="Player"
+                  disabled
+                />
+                <button id="leaderboard-submit" type="submit" disabled>Submit</button>
+              </div>
+              <p id="leaderboard-status" class="leaderboard-status">
+                Finish a run to submit a score.
+              </p>
+            </form>
+          </section>
+        </details>
+      </aside>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

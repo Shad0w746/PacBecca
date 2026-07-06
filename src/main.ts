@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import "./styles.css";
+import packageJson from "../package.json";
 import { PacBeccaScene } from "./game/PacBeccaScene";
+import { setupLeaderboard } from "./ui/leaderboard";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -19,4 +21,6 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [PacBeccaScene]
 };
 
+setupLeaderboard();
+document.querySelector("#version-badge")!.textContent = `v${packageJson.version}`;
 new Phaser.Game(config);

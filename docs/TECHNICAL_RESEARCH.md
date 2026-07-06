@@ -27,6 +27,7 @@ The pathfinding is intentionally simple: at intersections, a ghost chooses the l
 
 - Becca Burst: collecting pellets/hearts fills a meter; Space makes ghosts vulnerable briefly.
 - Yellow power cans: blue-lettered pickups that make ghosts vulnerable.
+- Hypno-rainbow save: once PacBecca has collected a yellow can, the first wrong ghost hit starts a 5-second rainbow vulnerable state instead of costing a life.
 - Hearts: bonus pickups that accelerate the Burst meter.
 - Ten-level campaign: each level gets a title, palette, speed settings, and vulnerability timing.
 - Original maze: PacBecca uses a new board layout, new colors, new ghost presentation, and a replaceable Becca avatar.
