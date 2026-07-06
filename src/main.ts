@@ -23,4 +23,23 @@ const config: Phaser.Types.Core.GameConfig = {
 
 setupLeaderboard();
 document.querySelector("#version-badge")!.textContent = `v${packageJson.version}`;
-new Phaser.Game(config);
+
+let game: Phaser.Game | null = null;
+const startScreen = document.querySelector<HTMLElement>("#start-screen");
+const startButton = document.querySelector<HTMLButtonElement>("#start-game");
+
+function startGame(): void {
+  if (game) {
+    return;
+  }
+
+  game = new Phaser.Game(config);
+  startScreen?.classList.add("is-hidden");
+  startButton?.setAttribute("disabled", "true");
+}
+
+startButton?.addEventListener("click", startGame);
+
+if (!startButton || !startScreen) {
+  startGame();
+}

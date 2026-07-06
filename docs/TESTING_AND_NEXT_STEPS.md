@@ -32,17 +32,18 @@ Expected result:
 ## Manual Game Test
 
 1. Open the local URL.
-2. Move with arrow keys or WASD.
-3. Collect pellets and hearts until the Burst meter fills.
-4. Press Space and confirm ghosts become vulnerable.
-5. Eat a yellow can and confirm vulnerability also triggers.
-6. After collecting at least one yellow can, collide with a normal ghost after vulnerability ends and confirm the hypno-rainbow save triggers for 5 seconds.
-7. Get caught three times or clear all 10 levels and confirm the leaderboard name form enables.
-8. Submit a score and confirm it appears in the top-10 list.
-9. Collapse and expand the side rules menu.
-10. Confirm the top-right version badge reads `v0.2.0`.
-11. Clear the level and confirm the next level title appears.
-12. Confirm Enter restarts after game over or victory.
+2. Confirm the start screen appears and the game does not begin until `Start Game` is clicked.
+3. Move with arrow keys or WASD.
+4. Collect pellets and hearts until the Burst meter fills.
+5. Press Space and confirm ghosts become vulnerable.
+6. Eat a yellow can and confirm vulnerability also triggers.
+7. After collecting at least one yellow can, collide with a normal ghost after vulnerability ends and confirm the hypno-rainbow save triggers for 5 seconds.
+8. Get caught three times or clear all 10 levels and confirm the leaderboard name form enables.
+9. Submit a score and confirm it appears in the top-10 list.
+10. Collapse and expand the side rules menu.
+11. Confirm the top-right version badge reads `v0.2.0`.
+12. Clear the level and confirm the next level title appears.
+13. Confirm Enter restarts after game over or victory.
 
 ## Next Build Pass
 

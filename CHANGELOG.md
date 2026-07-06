@@ -2,6 +2,7 @@
 
 ## 0.2.0 - 2026-07-06
 
+- Added a start screen button so the game waits for user input after page load or refresh.
 - Added a browser-local top-10 leaderboard with name submission after a run ends.
 - Added a collapsible side menu for the objective, rules, and leaderboard.
 - Added a top-right game version badge.

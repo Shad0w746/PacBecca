@@ -31,6 +31,7 @@ body {
 }
 
 .game-frame {
+  position: relative;
   width: 100%;
   height: min(100vh - 24px, 760px);
   min-height: 380px;
@@ -44,6 +45,57 @@ body {
 canvas {
   display: block;
   outline: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.start-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(circle at 42% 32%, rgba(250, 204, 21, 0.18), transparent 34%),
+    rgba(10, 10, 18, 0.92);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.start-screen.is-hidden {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.start-panel {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+
+.start-panel h1 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(42px, 8vw, 84px);
+  line-height: 1;
+}
+
+.start-button {
+  min-width: 180px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: #facc15;
+  color: #172554;
+  box-shadow: 0 12px 30px rgba(250, 204, 21, 0.24);
+  cursor: pointer;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.start-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 4px;
 }
 
 .version-badge {
