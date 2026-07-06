@@ -15,7 +15,7 @@ export const BASE_MAZE = [
   "#.#.#.###.#####.###.#.#.#",
   "#.#...#....h....#...#.#.#",
   "#.###.#.#######.#.###.#.#",
-  "#.....#...1234..#.....#.#",
+  "#.....#..12345..#.....#.#",
   "###.#.###.###.###.#.###.#",
   "#...#.....# #.....#...#.#",
   "#.###.#.#######.#.###.#.#",
@@ -34,7 +34,7 @@ export const BASE_MAZE = [
 export const GHOSTS: GhostConfig[] = [
   {
     id: "1",
-    name: "Riff",
+    name: "Frosty",
     personality: "hunter",
     color: 0xf05252,
     accent: 0xffcdd2,
@@ -43,7 +43,7 @@ export const GHOSTS: GhostConfig[] = [
   },
   {
     id: "2",
-    name: "Pippa",
+    name: "Megasen",
     personality: "ambusher",
     color: 0xf472b6,
     accent: 0xffe4f2,
@@ -52,7 +52,7 @@ export const GHOSTS: GhostConfig[] = [
   },
   {
     id: "3",
-    name: "Orbit",
+    name: "Aspyn",
     personality: "flanker",
     color: 0x38bdf8,
     accent: 0xdff8ff,
@@ -61,12 +61,21 @@ export const GHOSTS: GhostConfig[] = [
   },
   {
     id: "4",
-    name: "Moxie",
+    name: "Smeag",
     personality: "drifter",
     color: 0xfbbf24,
     accent: 0xfff3c4,
     scatterTarget: { x: 1, y: 21 },
     releaseDelayMs: 4200
+  },
+  {
+    id: "5",
+    name: "Captain",
+    personality: "interceptor",
+    color: 0x34d399,
+    accent: 0xeafff6,
+    scatterTarget: { x: 12, y: 1 },
+    releaseDelayMs: 5400
   }
 ];
 
@@ -97,7 +106,7 @@ const titles = [
   "Glitter Hall",
   "Left Turn Energy",
   "Snack Dash",
-  "Orbit Hour",
+  "Aspyn Hour",
   "The Group Chat",
   "Corner Confidence",
   "Afterparty Loop",

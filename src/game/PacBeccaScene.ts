@@ -241,10 +241,10 @@ export class PacBeccaScene extends Phaser.Scene {
       if (kind === "pellet") {
         pickup = this.add.circle(world.x, world.y, 3, this.level.palette.pellet, 0.9);
       } else if (kind === "power") {
-        pickup = this.add.circle(world.x, world.y, 8, this.level.palette.power, 0.95);
+        pickup = this.createPowerCan(world);
         this.tweens.add({
           targets: pickup,
-          scale: 1.28,
+          scale: 1.16,
           yoyo: true,
           repeat: -1,
           duration: 520,
@@ -263,6 +263,30 @@ export class PacBeccaScene extends Phaser.Scene {
 
       this.pickups.set(key, pickup);
     });
+  }
+
+  private createPowerCan(world: GridPoint): Phaser.GameObjects.Container {
+    const body = this.add.graphics();
+    body.fillStyle(0xfacc15, 1);
+    body.fillRoundedRect(-9, -7, 18, 14, 4);
+    body.lineStyle(2, 0xfef08a, 0.9);
+    body.strokeRoundedRect(-9, -7, 18, 14, 4);
+    body.fillStyle(0xfef08a, 0.8);
+    body.fillRoundedRect(-7, -4, 14, 8, 3);
+    body.lineStyle(1, 0x0f3a8a, 0.8);
+    body.strokeRoundedRect(-9, -7, 18, 14, 4);
+
+    const label = this.add
+      .text(0, 0, "BB", {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "7px",
+        fontStyle: "900",
+        color: "#1d4ed8"
+      })
+      .setOrigin(0.5);
+
+    const shine = this.add.rectangle(-4, -5, 7, 2, 0xffffff, 0.45);
+    return this.add.container(world.x, world.y, [body, shine, label]);
   }
 
   private createPlayer(): MovingEntity {
@@ -421,14 +445,18 @@ export class PacBeccaScene extends Phaser.Scene {
       );
     }
 
-    const riffTile = this.ghosts[0]?.tile ?? ghost.tile;
+    const leadHunterTile = this.ghosts[0]?.tile ?? ghost.tile;
     const target =
       this.globalMode === "scatter"
         ? ghost.config.scatterTarget
         : targetForGhost(ghost.config, ghost.tile, {
             playerTile: this.player.tile,
             playerDirection: this.player.direction,
-            riffTile
+            leadHunterTile,
+            boardCenter: {
+              x: Math.floor(this.maze.width / 2),
+              y: Math.floor(this.maze.height / 2)
+            }
           });
 
     return chooseTurnTowardTarget(this.maze, ghost.tile, ghost.direction, target);

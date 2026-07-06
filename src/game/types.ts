@@ -6,7 +6,12 @@ export type GhostMood = "normal" | "frightened" | "stunned" | "eaten";
 
 export type GlobalGhostMode = "scatter" | "chase";
 
-export type GhostPersonality = "hunter" | "ambusher" | "flanker" | "drifter";
+export type GhostPersonality =
+  | "hunter"
+  | "ambusher"
+  | "flanker"
+  | "drifter"
+  | "interceptor";
 
 export interface GridPoint {
   x: number;

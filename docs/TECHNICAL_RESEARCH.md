@@ -13,18 +13,20 @@ This file captures the implementation lessons worth borrowing for PacBecca witho
 
 ## Ghost AI Pattern
 
-PacBecca's four ghosts use original names and presentation, but the technical pattern is inspired by target-tile design:
+PacBecca's five ghosts use original names and presentation, but the technical pattern is inspired by target-tile design:
 
-- Riff targets Becca directly.
-- Pippa targets several tiles ahead of Becca.
-- Orbit uses Riff's position and Becca's heading to create a flank target.
-- Moxie targets Becca from far away but retreats toward a corner when close.
+- Frosty targets Becca directly.
+- Megasen targets several tiles ahead of Becca.
+- Aspyn uses Frosty's position and Becca's heading to create a flank target.
+- Smeag targets Becca from far away but retreats toward a corner when close.
+- Captain targets center-lane intercept points based on Becca's position.
 
 The pathfinding is intentionally simple: at intersections, a ghost chooses the legal direction whose next tile is closest to its current target. That keeps behavior readable and tunable.
 
 ## PacBecca Rule Changes
 
 - Becca Burst: collecting pellets/hearts fills a meter; Space makes ghosts vulnerable briefly.
+- Yellow power cans: blue-lettered pickups that make ghosts vulnerable.
 - Hearts: bonus pickups that accelerate the Burst meter.
 - Ten-level campaign: each level gets a title, palette, speed settings, and vulnerability timing.
 - Original maze: PacBecca uses a new board layout, new colors, new ghost presentation, and a replaceable Becca avatar.

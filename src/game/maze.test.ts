@@ -8,7 +8,7 @@ describe("PacBecca maze config", () => {
     expect(LEVELS.map((level) => level.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
-  it("parses the base maze with Becca, four ghosts, and pickups", () => {
+  it("parses the base maze with Becca, five ghosts, and pickups", () => {
     const maze = parseMaze(BASE_MAZE);
 
     expect(maze.width).toBe(25);

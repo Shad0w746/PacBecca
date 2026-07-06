@@ -23,15 +23,16 @@ The player avatar is loaded from `public/assets/becca-head.svg`. Replace that fi
 
 ## Current Game Rules
 
-- Clear all pellets, glow orbs, and hearts to advance.
-- Glow orbs make ghosts vulnerable for a short time.
+- Clear all pellets, yellow power cans, and hearts to advance.
+- Yellow power cans with blue writing make ghosts vulnerable for a short time.
 - Hearts and pellets fill the Becca Burst meter.
 - Becca Burst briefly makes every active ghost vulnerable.
-- The four ghosts have distinct target-tile behaviors:
-  - Riff: direct pursuer.
-  - Pippa: ambushes ahead of Becca.
-  - Orbit: flanks using Riff and Becca's direction.
-  - Moxie: chases from far away but drifts back when close.
+- The five ghosts have distinct target-tile behaviors:
+  - Frosty: direct pursuer.
+  - Megasen: ambushes ahead of Becca.
+  - Aspyn: flanks using Frosty and Becca's direction.
+  - Smeag: chases from far away but drifts back when close.
+  - Captain: intercepts Becca through the center lanes.
 
 ## Project Structure
 

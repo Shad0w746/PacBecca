@@ -78,7 +78,7 @@ export function parseMaze(rows: string[]): MazeModel {
         playerStart = point;
       }
 
-      if (/^[1-4]$/.test(tile)) {
+      if (/^[1-9]$/.test(tile)) {
         ghostStarts[tile] = point;
       }
     });
@@ -86,12 +86,6 @@ export function parseMaze(rows: string[]): MazeModel {
 
   if (!playerStart) {
     throw new Error("Maze must include a Becca start tile marked B.");
-  }
-
-  for (const id of ["1", "2", "3", "4"]) {
-    if (!ghostStarts[id]) {
-      throw new Error(`Maze must include ghost start tile ${id}.`);
-    }
   }
 
   return {

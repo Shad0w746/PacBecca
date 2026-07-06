@@ -35,7 +35,7 @@ Expected result:
 2. Move with arrow keys or WASD.
 3. Collect pellets and hearts until the Burst meter fills.
 4. Press Space and confirm ghosts become vulnerable.
-5. Eat a glow orb and confirm vulnerability also triggers.
+5. Eat a yellow can and confirm vulnerability also triggers.
 6. Clear the level and confirm the next level title appears.
 7. Get caught three times and confirm Enter restarts.
 

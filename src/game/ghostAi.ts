@@ -4,7 +4,8 @@ import { Direction, GhostConfig, GridPoint } from "./types";
 export interface TargetContext {
   playerTile: GridPoint;
   playerDirection: Direction;
-  riffTile: GridPoint;
+  leadHunterTile: GridPoint;
+  boardCenter: GridPoint;
 }
 
 export function targetForGhost(
@@ -20,8 +21,8 @@ export function targetForGhost(
     case "flanker": {
       const ahead = aheadOfPlayer(context.playerTile, context.playerDirection, 2);
       return {
-        x: ahead.x + (ahead.x - context.riffTile.x),
-        y: ahead.y + (ahead.y - context.riffTile.y)
+        x: ahead.x + (ahead.x - context.leadHunterTile.x),
+        y: ahead.y + (ahead.y - context.leadHunterTile.y)
       };
     }
     case "drifter": {
@@ -30,6 +31,13 @@ export function targetForGhost(
         ghostTile.y - context.playerTile.y
       );
       return distance > 7 ? context.playerTile : ghost.scatterTarget;
+    }
+    case "interceptor": {
+      const horizontalPressure = Math.abs(context.playerTile.x - context.boardCenter.x);
+      const verticalPressure = Math.abs(context.playerTile.y - context.boardCenter.y);
+      return horizontalPressure >= verticalPressure
+        ? { x: context.playerTile.x, y: context.boardCenter.y }
+        : { x: context.boardCenter.x, y: context.playerTile.y };
     }
   }
 }

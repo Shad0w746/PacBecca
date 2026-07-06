@@ -6,7 +6,8 @@ describe("ghost personalities", () => {
   const context = {
     playerTile: { x: 10, y: 10 },
     playerDirection: "right" as const,
-    riffTile: { x: 6, y: 10 }
+    leadHunterTile: { x: 6, y: 10 },
+    boardCenter: { x: 12, y: 11 }
   };
 
   it("gives each ghost a distinct chase target style", () => {
@@ -17,9 +18,10 @@ describe("ghost personalities", () => {
       ])
     );
 
-    expect(targets.Riff).toEqual({ x: 10, y: 10 });
-    expect(targets.Pippa).toEqual({ x: 14, y: 10 });
-    expect(targets.Orbit).toEqual({ x: 18, y: 10 });
-    expect(targets.Moxie).toEqual(GHOSTS[3].scatterTarget);
+    expect(targets.Frosty).toEqual({ x: 10, y: 10 });
+    expect(targets.Megasen).toEqual({ x: 14, y: 10 });
+    expect(targets.Aspyn).toEqual({ x: 18, y: 10 });
+    expect(targets.Smeag).toEqual(GHOSTS[3].scatterTarget);
+    expect(targets.Captain).toEqual({ x: 10, y: 11 });
   });
 });
