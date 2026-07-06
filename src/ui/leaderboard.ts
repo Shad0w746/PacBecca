@@ -27,6 +27,14 @@ export function setupLeaderboard(): void {
 
   let pendingScore: FinalScoreDetail | null = null;
 
+  const stopGameKeyHandling = (event: KeyboardEvent): void => {
+    event.stopPropagation();
+  };
+
+  input.addEventListener("keydown", stopGameKeyHandling);
+  input.addEventListener("keyup", stopGameKeyHandling);
+  input.addEventListener("keypress", stopGameKeyHandling);
+
   const render = (): void => {
     const entries = getEntries();
     list.replaceChildren();

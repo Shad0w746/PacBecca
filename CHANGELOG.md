@@ -4,6 +4,7 @@
 
 - Added a start screen button so the game waits for user input after page load or refresh.
 - Added a browser-local top-10 leaderboard with name submission after a run ends.
+- Fixed leaderboard name entry so WASD and Enter no longer leak into PacBecca controls.
 - Added a collapsible side menu for the objective, rules, and leaderboard.
 - Added a top-right game version badge.
 - Added a one-time hypno-rainbow wrong-hit save after PacBecca collects a yellow can.

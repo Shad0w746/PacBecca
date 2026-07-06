@@ -124,10 +124,11 @@ export class PacBeccaScene extends Phaser.Scene {
 
   create(): void {
     this.cursors = this.input.keyboard!.createCursorKeys();
-    this.keys = this.input.keyboard!.addKeys("W,A,S,D,SPACE,ENTER") as Record<
+    this.keys = this.input.keyboard!.addKeys("W,A,S,D,SPACE,ENTER", false) as Record<
       string,
       Phaser.Input.Keyboard.Key
     >;
+    this.input.keyboard!.removeCapture("UP,DOWN,LEFT,RIGHT,SPACE,SHIFT,W,A,S,D,ENTER");
 
     this.createHud();
     this.startLevel(0);
@@ -136,7 +137,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.ended) {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.ENTER)) {
+      if (!this.isTypingInTextField() && Phaser.Input.Keyboard.JustDown(this.keys.ENTER)) {
         this.restartGame();
       }
       return;
@@ -146,7 +147,9 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
-    this.readControls();
+    if (!this.isTypingInTextField()) {
+      this.readControls();
+    }
     this.updateMode(delta);
     this.updatePlayer(delta);
     this.updateGhosts(delta);
@@ -446,6 +449,17 @@ export class PacBeccaScene extends Phaser.Scene {
     ) {
       this.triggerBurst();
     }
+  }
+
+  private isTypingInTextField(): boolean {
+    const activeElement = document.activeElement;
+
+    return (
+      activeElement instanceof HTMLInputElement ||
+      activeElement instanceof HTMLTextAreaElement ||
+      activeElement instanceof HTMLSelectElement ||
+      activeElement?.getAttribute("contenteditable") === "true"
+    );
   }
 
   private updateMode(delta: number): void {
