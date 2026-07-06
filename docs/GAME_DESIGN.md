@@ -12,6 +12,7 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 - Ten level configs that scale speed, color, and vulnerability timing.
 - Five ghosts with named personalities.
 - Yellow power cans with blue writing.
+- Faux-3D Becca head animation with a direction-aware chomping mouth.
 - Replaceable Becca head image.
 
 ## Level Set
@@ -37,4 +38,4 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 
 ## Asset Direction
 
-The current Becca head uses a transparent PNG cropped from the supplied Snagit reference images. Future polish can make additional sprite variants for open-mouth, powered-up, or celebration states.
+The current Becca head uses a transparent sprite sheet cropped from all supplied Snagit reference images. The game draws the open/close mouth live so the swallow animation can face the movement direction.

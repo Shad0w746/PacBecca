@@ -16,10 +16,11 @@ Open the local URL Vite prints, usually `http://127.0.0.1:5173/`.
 - Arrow keys or WASD: move Becca
 - Space: use Becca Burst when the meter is full
 - Enter: restart after game over or victory
+- Becca's head chomps in the direction of movement while she clears pickups.
 
 ## Becca Head Asset
 
-The player avatar is loaded from `public/assets/becca-head.png`. It was cropped from the supplied Snagit reference images into a transparent game-ready face icon.
+The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transparent sprite sheet built from the supplied Snagit reference images. `public/assets/becca-head.png` remains as the single-frame fallback/preview.
 
 ## Current Game Rules
 

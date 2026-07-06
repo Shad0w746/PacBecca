@@ -1,6 +1,6 @@
 {
   "name": "pacbecca",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "PacBecca, an original maze-chase browser game inspired by classic arcade design.",
   "type": "module",

@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-07-06
 
+- Added a six-frame Becca sprite sheet built from all supplied Snagit references.
+- Added faux-3D player head motion and a direction-aware chomping mouth.
 - Replaced the placeholder Becca avatar with a transparent PNG cropped from the supplied Snagit images.
 - Added clearer ghost facing details with directional eyes and front markers.
 - Renamed and expanded the ghost roster to Frosty, Megasen, Aspyn, Smeag, and Captain.

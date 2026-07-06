@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import {
   AVATAR_ASSET_PATH,
+  AVATAR_FRAME_COUNT,
+  AVATAR_FRAME_SIZE,
+  AVATAR_SHEET_ASSET_PATH,
   BOARD_OFFSET,
   BURST_METER_MAX,
   GAME_TITLE,
@@ -38,6 +41,16 @@ interface MovingEntity {
   container: Phaser.GameObjects.Container;
 }
 
+interface PlayerEntity extends MovingEntity {
+  sprite: Phaser.GameObjects.Sprite;
+  ring: Phaser.GameObjects.Arc;
+  shadow: Phaser.GameObjects.Ellipse;
+  mouth: Phaser.GameObjects.Graphics;
+  gloss: Phaser.GameObjects.Arc;
+  chompTimeMs: number;
+  lastFacing: Exclude<Direction, "none">;
+}
+
 interface GhostFaceParts {
   body: Phaser.GameObjects.Arc;
   shine: Phaser.GameObjects.Arc;
@@ -65,7 +78,7 @@ export class PacBeccaScene extends Phaser.Scene {
   private ghostCombo = 0;
   private maze!: MazeModel;
   private level!: LevelConfig;
-  private player!: MovingEntity;
+  private player!: PlayerEntity;
   private ghosts: GhostEntity[] = [];
   private pickups = new Map<string, Phaser.GameObjects.GameObject>();
   private desiredDirection: Direction = "none";
@@ -97,6 +110,10 @@ export class PacBeccaScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image("becca-head", AVATAR_ASSET_PATH);
+    this.load.spritesheet("becca-head-sheet", AVATAR_SHEET_ASSET_PATH, {
+      frameWidth: AVATAR_FRAME_SIZE,
+      frameHeight: AVATAR_FRAME_SIZE
+    });
   }
 
   create(): void {
@@ -301,12 +318,21 @@ export class PacBeccaScene extends Phaser.Scene {
     return this.add.container(world.x, world.y, [body, shine, label]);
   }
 
-  private createPlayer(): MovingEntity {
+  private createPlayer(): PlayerEntity {
     const start = this.maze.playerStart;
     const world = toWorld(start, BOARD_OFFSET);
-    const sprite = this.add.image(0, 0, "becca-head").setDisplaySize(28, 28);
-    const ring = this.add.circle(0, 0, 16, 0xffffff, 0).setStrokeStyle(3, 0xf9a8d4, 0.9);
-    const container = this.add.container(world.x, world.y, [ring, sprite]);
+    const shadow = this.add.ellipse(2, 9, 30, 11, 0x050712, 0.42);
+    const ring = this.add.circle(0, 0, 17, 0xffffff, 0).setStrokeStyle(3, 0xf9a8d4, 0.95);
+    const sprite = this.add.sprite(0, -2, "becca-head-sheet", 5).setDisplaySize(34, 34);
+    const gloss = this.add.circle(-6, -9, 5, 0xffffff, 0.2).setScale(1.55, 0.7);
+    const mouth = this.add.graphics();
+    const container = this.add.container(world.x, world.y, [
+      shadow,
+      ring,
+      sprite,
+      gloss,
+      mouth
+    ]);
     container.setDepth(20);
     return {
       tile: start,
@@ -314,7 +340,14 @@ export class PacBeccaScene extends Phaser.Scene {
       toTile: start,
       direction: "none",
       progress: 1,
-      container
+      container,
+      sprite,
+      ring,
+      shadow,
+      mouth,
+      gloss,
+      chompTimeMs: 0,
+      lastFacing: "right"
     };
   }
 
@@ -426,6 +459,7 @@ export class PacBeccaScene extends Phaser.Scene {
       () => this.choosePlayerDirection()
     );
     this.consumePickup();
+    this.updatePlayerAppearance(delta);
   }
 
   private choosePlayerDirection(): Direction {
@@ -545,6 +579,86 @@ export class PacBeccaScene extends Phaser.Scene {
     );
   }
 
+  private updatePlayerAppearance(delta: number): void {
+    const moving = this.player.direction !== "none";
+    if (moving) {
+      this.player.lastFacing = this.player.direction as Exclude<Direction, "none">;
+      this.player.chompTimeMs += delta;
+    } else {
+      this.player.chompTimeMs = Math.max(0, this.player.chompTimeMs - delta * 0.5);
+    }
+
+    const frameSequence = [5, 2, 1, 0, 4, 3, 4, 0, 1, 2];
+    const frameIndex = moving
+      ? frameSequence[
+          Math.floor(this.player.chompTimeMs / 95) % frameSequence.length
+        ] % AVATAR_FRAME_COUNT
+      : 5;
+    this.player.sprite.setFrame(frameIndex);
+
+    const phase = (this.player.chompTimeMs % 300) / 300;
+    const openAmount = moving ? Math.sin(phase * Math.PI) : 0;
+    const bob = moving ? Math.sin(this.player.chompTimeMs / 72) * 1.2 : 0;
+    const lean = {
+      up: 0,
+      down: 0,
+      left: -8,
+      right: 8
+    }[this.player.lastFacing];
+
+    this.player.sprite.setPosition(0, -2 + bob);
+    this.player.sprite.setAngle(lean);
+    this.player.gloss.setPosition(-6, -10 + bob * 0.45);
+    this.player.ring.setScale(1 + openAmount * 0.035, 1 - openAmount * 0.02);
+    this.player.shadow.setScale(1 + openAmount * 0.18, 0.92 - openAmount * 0.04);
+    this.player.shadow.setAlpha(0.34 + openAmount * 0.16);
+    this.drawPlayerMouth(openAmount);
+  }
+
+  private drawPlayerMouth(openAmount: number): void {
+    this.player.mouth.clear();
+    if (openAmount <= 0.06) {
+      return;
+    }
+
+    const directionAngle = {
+      right: 0,
+      down: Math.PI / 2,
+      left: Math.PI,
+      up: -Math.PI / 2
+    }[this.player.lastFacing];
+    const radius = 21;
+    const halfAngle = 0.12 + openAmount * 0.72;
+
+    this.player.mouth.fillStyle(0x070711, 0.96);
+    this.player.mouth.beginPath();
+    this.player.mouth.moveTo(0, -2);
+    this.player.mouth.arc(
+      0,
+      -2,
+      radius,
+      directionAngle - halfAngle,
+      directionAngle + halfAngle,
+      false
+    );
+    this.player.mouth.closePath();
+    this.player.mouth.fillPath();
+
+    this.player.mouth.lineStyle(2, 0xf9a8d4, 0.75);
+    this.player.mouth.beginPath();
+    this.player.mouth.moveTo(0, -2);
+    this.player.mouth.arc(
+      0,
+      -2,
+      radius,
+      directionAngle - halfAngle,
+      directionAngle + halfAngle,
+      false
+    );
+    this.player.mouth.closePath();
+    this.player.mouth.strokePath();
+  }
+
   private consumePickup(): void {
     const key = keyOf(this.player.tile);
     const pickup = this.maze.pickups.get(key);
@@ -657,6 +771,10 @@ export class PacBeccaScene extends Phaser.Scene {
     this.player.toTile = this.maze.playerStart;
     this.player.direction = "none";
     this.player.progress = 1;
+    this.player.lastFacing = "right";
+    this.player.chompTimeMs = 0;
+    this.player.sprite.setFrame(5);
+    this.player.mouth.clear();
     this.placeEntity(this.player, this.player.tile);
 
     this.ghosts.forEach((ghost) => {
