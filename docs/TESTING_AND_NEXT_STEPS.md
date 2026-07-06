@@ -41,7 +41,7 @@ Expected result:
 
 ## Next Build Pass
 
-- Replace `public/assets/becca-head.svg` with an approved Becca photo.
+- Tune `public/assets/becca-head.png` if Becca wants a different crop, expression, or style.
 - Decide the final rule changes and tune Burst duration.
 - Add unique maze layouts for levels 2 through 10.
 - Add original sound effects.

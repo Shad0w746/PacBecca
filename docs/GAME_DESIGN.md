@@ -37,4 +37,4 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 
 ## Asset Direction
 
-The current Becca head is a friendly placeholder SVG. The real version should use a friend-approved photo, cropped to the head, ideally transparent, square, and at least 256 by 256 pixels.
+The current Becca head uses a transparent PNG cropped from the supplied Snagit reference images. Future polish can make additional sprite variants for open-mouth, powered-up, or celebration states.

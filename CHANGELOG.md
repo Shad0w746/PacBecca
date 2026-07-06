@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replaced the placeholder Becca avatar with a transparent PNG cropped from the supplied Snagit images.
 - Added clearer ghost facing details with directional eyes and front markers.
 - Renamed and expanded the ghost roster to Frosty, Megasen, Aspyn, Smeag, and Captain.
 - Added Captain as a fifth interceptor ghost.

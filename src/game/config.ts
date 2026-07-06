@@ -1,7 +1,7 @@
 import { GhostConfig, GridPoint, LevelConfig } from "./types";
 
 export const GAME_TITLE = "PacBecca";
-export const AVATAR_ASSET_PATH = "/assets/becca-head.svg";
+export const AVATAR_ASSET_PATH = "/assets/becca-head.png";
 export const BOARD_OFFSET: GridPoint = { x: 32, y: 64 };
 export const BURST_METER_MAX = 100;
 

@@ -19,7 +19,7 @@ Open the local URL Vite prints, usually `http://127.0.0.1:5173/`.
 
 ## Becca Head Asset
 
-The player avatar is loaded from `public/assets/becca-head.svg`. Replace that file with a cropped, friend-approved head image when you have one. A transparent PNG with the same path adjusted in `src/game/config.ts` will work well.
+The player avatar is loaded from `public/assets/becca-head.png`. It was cropped from the supplied Snagit reference images into a transparent game-ready face icon.
 
 ## Current Game Rules
 
