@@ -78,6 +78,9 @@ export class PacBeccaScene extends Phaser.Scene {
   private powerCansCollected = 0;
   private wrongWaySaveUsed = false;
   private hypnoRainbowUntilMs = 0;
+  private secretHypnoUsedThisSession = false;
+  private secretHypnoLevelIndex: number | null = null;
+  private secretClickTimesMs: number[] = [];
   private ghostCombo = 0;
   private maze!: MazeModel;
   private level!: LevelConfig;
@@ -128,6 +131,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
     this.createHud();
     this.startLevel(0);
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handleSecretPlayerClick, this);
   }
 
   update(_time: number, delta: number): void {
@@ -213,6 +217,8 @@ export class PacBeccaScene extends Phaser.Scene {
     this.modeRemainingMs = this.level.modeTimeline[0].durationMs;
     this.frightenedUntilMs = 0;
     this.hypnoRainbowUntilMs = 0;
+    this.secretHypnoLevelIndex = null;
+    this.secretClickTimesMs = [];
     this.ghostCombo = 0;
     this.desiredDirection = "none";
     this.pausedAfterHit = false;
@@ -753,8 +759,48 @@ export class PacBeccaScene extends Phaser.Scene {
     });
   }
 
+  private handleSecretPlayerClick(pointer: Phaser.Input.Pointer): void {
+    if (!this.player || this.secretHypnoUsedThisSession || this.ended) {
+      return;
+    }
+
+    const distance = Phaser.Math.Distance.Between(
+      pointer.x,
+      pointer.y,
+      this.player.container.x,
+      this.player.container.y
+    );
+    if (distance > 28) {
+      this.secretClickTimesMs = [];
+      return;
+    }
+
+    const now = this.time.now;
+    this.secretClickTimesMs = [...this.secretClickTimesMs, now].filter(
+      (time) => now - time <= 1000
+    );
+
+    if (this.secretClickTimesMs.length >= 3) {
+      this.triggerSecretRoundHypno();
+    }
+  }
+
+  private triggerSecretRoundHypno(): void {
+    this.secretHypnoUsedThisSession = true;
+    this.secretHypnoLevelIndex = this.levelIndex;
+    this.secretClickTimesMs = [];
+    this.ghostCombo = 0;
+    this.reverseGhosts();
+    this.cameras.main.flash(260, 255, 0, 230);
+    this.cameras.main.shake(220, 0.004);
+    this.hud.message.setText("PacBecca is mad. Hypno mode for this round!");
+  }
+
   private isHypnoRainbowActive(): boolean {
-    return this.time.now < this.hypnoRainbowUntilMs;
+    return (
+      this.time.now < this.hypnoRainbowUntilMs ||
+      this.secretHypnoLevelIndex === this.levelIndex
+    );
   }
 
   private isGhostVulnerable(ghost: GhostEntity): boolean {
