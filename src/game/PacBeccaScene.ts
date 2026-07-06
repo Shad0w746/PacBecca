@@ -38,11 +38,23 @@ interface MovingEntity {
   container: Phaser.GameObjects.Container;
 }
 
+interface GhostFaceParts {
+  body: Phaser.GameObjects.Arc;
+  shine: Phaser.GameObjects.Arc;
+  leftEye: Phaser.GameObjects.Arc;
+  rightEye: Phaser.GameObjects.Arc;
+  leftPupil: Phaser.GameObjects.Arc;
+  rightPupil: Phaser.GameObjects.Arc;
+  facingMarker: Phaser.GameObjects.Text;
+}
+
 interface GhostEntity extends MovingEntity {
   config: GhostConfig;
   mood: GhostMood;
   released: boolean;
   eatenUntilMs: number;
+  face: GhostFaceParts;
+  lastFacing: Exclude<Direction, "none">;
 }
 
 export class PacBeccaScene extends Phaser.Scene {
@@ -310,17 +322,47 @@ export class PacBeccaScene extends Phaser.Scene {
     return GHOSTS.map((config) => {
       const start = this.maze.ghostStarts[config.id];
       const world = toWorld(start, BOARD_OFFSET);
-      const body = this.add.circle(0, 0, 12, config.color, 1);
+      const body = this.add.circle(0, 0, 13, config.color, 1);
       const shine = this.add.circle(-4, -5, 4, config.accent, 0.9);
-      const leftEye = this.add.circle(-4, 1, 2, 0x111827, 1);
-      const rightEye = this.add.circle(5, 1, 2, 0x111827, 1);
-      const container = this.add.container(world.x, world.y, [body, shine, leftEye, rightEye]);
+      const leftEye = this.add.circle(-4, -1, 4, 0xf8fafc, 0.95);
+      const rightEye = this.add.circle(5, -1, 4, 0xf8fafc, 0.95);
+      const leftPupil = this.add.circle(-5.5, -1, 1.7, 0x111827, 1);
+      const rightPupil = this.add.circle(3.5, -1, 1.7, 0x111827, 1);
+      const facingMarker = this.add
+        .text(-9, 0, "<", {
+          fontFamily: "Inter, Arial, sans-serif",
+          fontSize: "17px",
+          fontStyle: "900",
+          color: "#ffffff",
+          stroke: "#111827",
+          strokeThickness: 4
+        })
+        .setOrigin(0.5);
+      const container = this.add.container(world.x, world.y, [
+        body,
+        shine,
+        leftEye,
+        rightEye,
+        leftPupil,
+        rightPupil,
+        facingMarker
+      ]);
       container.setDepth(15);
       return {
         config,
         mood: "normal",
         released: false,
         eatenUntilMs: 0,
+        face: {
+          body,
+          shine,
+          leftEye,
+          rightEye,
+          leftPupil,
+          rightPupil,
+          facingMarker
+        },
+        lastFacing: "left",
         tile: start,
         fromTile: start,
         toTile: start,
@@ -660,22 +702,62 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   private updateGhostAppearance(ghost: GhostEntity): void {
-    const body = ghost.container.list[0] as Phaser.GameObjects.Arc;
-    const shine = ghost.container.list[1] as Phaser.GameObjects.Arc;
+    this.updateGhostFacing(ghost);
+    const { body, shine, leftEye, rightEye, leftPupil, rightPupil, facingMarker } =
+      ghost.face;
+
     if (ghost.mood === "eaten") {
       body.setFillStyle(0x111827, 0.25);
       shine.setFillStyle(0xf8fafc, 0.95);
+      leftEye.setAlpha(1);
+      rightEye.setAlpha(1);
+      leftPupil.setAlpha(1);
+      rightPupil.setAlpha(1);
+      facingMarker.setAlpha(1);
       return;
     }
 
     if (this.time.now < this.frightenedUntilMs || ghost.mood === "stunned") {
       body.setFillStyle(0x6d28d9, 1);
       shine.setFillStyle(0xc4b5fd, 0.95);
+      leftEye.setAlpha(1);
+      rightEye.setAlpha(1);
+      leftPupil.setAlpha(1);
+      rightPupil.setAlpha(1);
+      facingMarker.setAlpha(1);
       return;
     }
 
     body.setFillStyle(ghost.config.color, 1);
     shine.setFillStyle(ghost.config.accent, 0.9);
+    leftEye.setAlpha(1);
+    rightEye.setAlpha(1);
+    leftPupil.setAlpha(1);
+    rightPupil.setAlpha(1);
+    facingMarker.setAlpha(1);
+  }
+
+  private updateGhostFacing(ghost: GhostEntity): void {
+    if (ghost.direction !== "none") {
+      ghost.lastFacing = ghost.direction;
+    }
+
+    const facing = ghost.lastFacing;
+    const vector = {
+      up: { x: 0, y: -1, marker: "^" },
+      down: { x: 0, y: 1, marker: "v" },
+      left: { x: -1, y: 0, marker: "<" },
+      right: { x: 1, y: 0, marker: ">" }
+    }[facing];
+
+    const { leftEye, rightEye, leftPupil, rightPupil, facingMarker } = ghost.face;
+    const eyeYOffset = vector.y * 2 - 1;
+    leftEye.setPosition(-4, eyeYOffset);
+    rightEye.setPosition(5, eyeYOffset);
+    leftPupil.setPosition(-4 + vector.x * 2.3, eyeYOffset + vector.y * 2.3);
+    rightPupil.setPosition(5 + vector.x * 2.3, eyeYOffset + vector.y * 2.3);
+    facingMarker.setText(vector.marker);
+    facingMarker.setPosition(vector.x * 7, vector.y * 7);
   }
 
   private updateHud(): void {

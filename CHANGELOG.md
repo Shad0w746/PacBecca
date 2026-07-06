@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added clearer ghost facing details with directional eyes and front markers.
 - Renamed and expanded the ghost roster to Frosty, Megasen, Aspyn, Smeag, and Captain.
 - Added Captain as a fifth interceptor ghost.
 - Changed power pickups into yellow cans with blue writing.
