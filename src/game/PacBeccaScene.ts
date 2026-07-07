@@ -83,6 +83,7 @@ export class PacBeccaScene extends Phaser.Scene {
   private lives = 3;
   private burstMeter = 0;
   private powerCansCollected = 0;
+  private powerHitRagePending = false;
   private wrongWaySaveUsed = false;
   private hypnoRainbowUntilMs = 0;
   private secretHypnoUsedThisSession = false;
@@ -764,6 +765,7 @@ export class PacBeccaScene extends Phaser.Scene {
       this.score += 50;
       this.addBurst(18);
       this.powerCansCollected += 1;
+      this.powerHitRagePending = true;
       this.showPowerPickupBurst();
       this.frightenGhosts(this.level.frightenedDurationMs);
     } else {
@@ -918,8 +920,46 @@ export class PacBeccaScene extends Phaser.Scene {
     this.reverseGhosts();
     this.cameras.main.flash(180, 255, 0, 210);
     this.cameras.main.shake(160, 0.004);
-    this.hud.message.setText("BRAZY BECCA RAGE!");
+    this.hud.message.setText("BECCA RAGE");
     this.showBrazyRageSplash();
+  }
+
+  private flashPendingPowerHitRage(): void {
+    if (!this.powerHitRagePending) {
+      return;
+    }
+
+    this.powerHitRagePending = false;
+    this.cameras.main.flash(180, 255, 236, 59);
+    this.showBeccaRageTextFlash();
+  }
+
+  private showBeccaRageTextFlash(): void {
+    const text = this.add
+      .text(480, 118, "BECCA RAGE", {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "66px",
+        fontStyle: "900",
+        color: "#fff200",
+        stroke: "#111827",
+        strokeThickness: 12
+      })
+      .setOrigin(0.5)
+      .setDepth(4900)
+      .setAlpha(0)
+      .setScale(0.84)
+      .setShadow(0, 6, "#f472b6", 9, true, true);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 1,
+      scale: 1.08,
+      duration: 130,
+      ease: "Back.easeOut",
+      yoyo: true,
+      hold: 360,
+      onComplete: () => text.destroy()
+    });
   }
 
   private showBrazyRageSplash(): void {
@@ -948,9 +988,9 @@ export class PacBeccaScene extends Phaser.Scene {
       .setStrokeStyle(5, 0xfacc15, 0.92);
 
     const title = this.add
-      .text(480, 106, "BRAZY BECCA RAGE!", {
+      .text(480, 106, "BECCA RAGE", {
         fontFamily: "Inter, Arial, sans-serif",
-        fontSize: "58px",
+        fontSize: "66px",
         fontStyle: "900",
         color: "#fff200",
         stroke: "#111827",
@@ -1055,16 +1095,19 @@ export class PacBeccaScene extends Phaser.Scene {
       }
 
       if (this.isGhostVulnerable(ghost)) {
+        this.flashPendingPowerHitRage();
         this.eatGhost(ghost);
         return;
       }
 
       if (this.isRearGhostContact(playerBounds, ghostBounds, ghost)) {
+        this.flashPendingPowerHitRage();
         this.eatGhost(ghost, "rear");
         return;
       }
 
       if (this.canTriggerWrongWaySave()) {
+        this.powerHitRagePending = false;
         this.triggerHypnoRainbow();
         this.eatGhost(ghost);
         return;
@@ -1190,6 +1233,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.lives = 3;
     this.burstMeter = 0;
     this.powerCansCollected = 0;
+    this.powerHitRagePending = false;
     this.wrongWaySaveUsed = false;
     this.hypnoRainbowUntilMs = 0;
     this.startLevel(0);

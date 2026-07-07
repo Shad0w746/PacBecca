@@ -5,7 +5,8 @@
 - Added a start screen button so the game waits for user input after page load or refresh.
 - Added a browser-local top-10 leaderboard with name submission after a run ends.
 - Fixed leaderboard name entry so WASD and Enter no longer leak into PacBecca controls.
-- Added a randomized "BRAZY BECCA RAGE!" pause splash when the first powered wrong-way ghost hit triggers hypno mode.
+- Added a randomized "BECCA RAGE" pause splash when the first powered wrong-way ghost hit triggers hypno mode.
+- Added a one-time "BECCA RAGE" flash for the first ghost contact after collecting a power can.
 - Added a fireworks-style color burst around PacBecca when she collects a yellow power can.
 - Improved iframe responsiveness so PacBecca fits the embedded window without forced page scrolling.
 - Added readable ghost name tags directly on the ghost NPCs.
