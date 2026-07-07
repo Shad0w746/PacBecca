@@ -64,6 +64,7 @@ interface GhostFaceParts {
   leftPupil: Phaser.GameObjects.Arc;
   rightPupil: Phaser.GameObjects.Arc;
   facingMarker: Phaser.GameObjects.Text;
+  nameTagBack: Phaser.GameObjects.Rectangle;
   nameLabel: Phaser.GameObjects.Text;
 }
 
@@ -409,17 +410,20 @@ export class PacBeccaScene extends Phaser.Scene {
           strokeThickness: 4
         })
         .setOrigin(0.5);
+      const nameTagBack = this.add
+        .rectangle(0, 21, Math.max(42, config.name.length * 7 + 10), 14, 0x050712, 0.78)
+        .setStrokeStyle(1, config.accent, 0.88);
       const nameLabel = this.add
-        .text(0, 15, config.name, {
+        .text(0, 21, config.name, {
           fontFamily: "Inter, Arial, sans-serif",
-          fontSize: "7px",
+          fontSize: "9px",
           fontStyle: "900",
           color: "#f8fafc",
           align: "center",
           stroke: "#111827",
-          strokeThickness: 3
+          strokeThickness: 2
         })
-        .setOrigin(0.5, 0);
+        .setOrigin(0.5);
       const container = this.add.container(world.x, world.y, [
         body,
         shine,
@@ -428,6 +432,7 @@ export class PacBeccaScene extends Phaser.Scene {
         leftPupil,
         rightPupil,
         facingMarker,
+        nameTagBack,
         nameLabel
       ]);
       container.setDepth(15);
@@ -444,6 +449,7 @@ export class PacBeccaScene extends Phaser.Scene {
           leftPupil,
           rightPupil,
           facingMarker,
+          nameTagBack,
           nameLabel
         },
         lastFacing: "left",
@@ -1191,8 +1197,17 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private updateGhostAppearance(ghost: GhostEntity): void {
     this.updateGhostFacing(ghost);
-    const { body, shine, leftEye, rightEye, leftPupil, rightPupil, facingMarker, nameLabel } =
-      ghost.face;
+    const {
+      body,
+      shine,
+      leftEye,
+      rightEye,
+      leftPupil,
+      rightPupil,
+      facingMarker,
+      nameTagBack,
+      nameLabel
+    } = ghost.face;
 
     if (ghost.mood === "eaten") {
       body.setFillStyle(0x111827, 0.25);
@@ -1202,6 +1217,9 @@ export class PacBeccaScene extends Phaser.Scene {
       leftPupil.setAlpha(1);
       rightPupil.setAlpha(1);
       facingMarker.setAlpha(1);
+      nameTagBack.setAlpha(0.7);
+      nameTagBack.setFillStyle(0x050712, 0.7);
+      nameTagBack.setStrokeStyle(1, 0xdbeafe, 0.65);
       nameLabel.setAlpha(0.82);
       nameLabel.setColor("#dbeafe");
       return;
@@ -1215,6 +1233,9 @@ export class PacBeccaScene extends Phaser.Scene {
       leftPupil.setAlpha(1);
       rightPupil.setAlpha(1);
       facingMarker.setAlpha(1);
+      nameTagBack.setAlpha(0.98);
+      nameTagBack.setFillStyle(0x23164a, 0.88);
+      nameTagBack.setStrokeStyle(1, 0xfef08a, 0.95);
       nameLabel.setAlpha(1);
       nameLabel.setColor("#fef08a");
       return;
@@ -1227,6 +1248,9 @@ export class PacBeccaScene extends Phaser.Scene {
     leftPupil.setAlpha(1);
     rightPupil.setAlpha(1);
     facingMarker.setAlpha(1);
+    nameTagBack.setAlpha(0.92);
+    nameTagBack.setFillStyle(0x050712, 0.78);
+    nameTagBack.setStrokeStyle(1, ghost.config.accent, 0.88);
     nameLabel.setAlpha(0.95);
     nameLabel.setColor("#f8fafc");
   }
