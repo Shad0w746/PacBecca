@@ -7,6 +7,7 @@
 - Fixed leaderboard name entry so WASD and Enter no longer leak into PacBecca controls.
 - Added a randomized "BECCA RAGE" pause splash when the first powered wrong-way ghost hit triggers hypno mode.
 - Added a one-time "BECCA RAGE" flash for the first ghost contact after collecting a power can.
+- Doubled yellow power cans on levels 1 through 3.
 - Added a fireworks-style color burst around PacBecca when she collects a yellow power can.
 - Improved iframe responsiveness so PacBecca fits the embedded window without forced page scrolling.
 - Added readable ghost name tags directly on the ghost NPCs.

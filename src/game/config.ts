@@ -46,6 +46,27 @@ export const BASE_MAZE = [
   "#########################"
 ];
 
+const earlyLevelExtraPowerCanTiles: GridPoint[] = [
+  { x: 3, y: 5 },
+  { x: 21, y: 5 },
+  { x: 3, y: 15 },
+  { x: 21, y: 15 }
+];
+
+function addPowerCans(rows: string[], tiles: GridPoint[]): string[] {
+  return rows.map((row, y) => {
+    const chars = [...row];
+    tiles
+      .filter((tile) => tile.y === y)
+      .forEach((tile) => {
+        chars[tile.x] = "o";
+      });
+    return chars.join("");
+  });
+}
+
+export const EARLY_POWER_MAZE = addPowerCans(BASE_MAZE, earlyLevelExtraPowerCanTiles);
+
 export const GHOSTS: GhostConfig[] = [
   {
     id: "1",
@@ -135,7 +156,7 @@ export const LEVELS: LevelConfig[] = Array.from({ length: 10 }, (_, index) => {
   return {
     id,
     title: titles[index],
-    rows: BASE_MAZE,
+    rows: id <= 3 ? EARLY_POWER_MAZE : BASE_MAZE,
     palette: {
       wall,
       wallAccent,
