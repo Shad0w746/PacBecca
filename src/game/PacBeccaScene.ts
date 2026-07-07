@@ -14,6 +14,7 @@ import {
   RAGE_SCREENSHOT_KEYS,
   WRONG_WAY_HYPNO_DURATION_MS
 } from "./config";
+import { isRearContact } from "./collision";
 import { targetForGhost } from "./ghostAi";
 import {
   keyOf,
@@ -1052,6 +1053,11 @@ export class PacBeccaScene extends Phaser.Scene {
         return;
       }
 
+      if (this.isRearGhostContact(playerBounds, ghostBounds, ghost)) {
+        this.eatGhost(ghost, "rear");
+        return;
+      }
+
       if (this.canTriggerWrongWaySave()) {
         this.triggerHypnoRainbow();
         this.eatGhost(ghost);
@@ -1062,13 +1068,35 @@ export class PacBeccaScene extends Phaser.Scene {
     });
   }
 
-  private eatGhost(ghost: GhostEntity): void {
+  private isRearGhostContact(
+    playerBounds: Phaser.Geom.Rectangle,
+    ghostBounds: Phaser.Geom.Rectangle,
+    ghost: GhostEntity
+  ): boolean {
+    return isRearContact({
+      attacker: {
+        x: playerBounds.centerX,
+        y: playerBounds.centerY
+      },
+      target: {
+        x: ghostBounds.centerX,
+        y: ghostBounds.centerY
+      },
+      targetFacing: ghost.lastFacing
+    });
+  }
+
+  private eatGhost(ghost: GhostEntity, hitType: "normal" | "rear" = "normal"): void {
     this.ghostCombo += 1;
     this.score += 200 * this.ghostCombo;
     ghost.mood = "eaten";
     ghost.direction = "none";
     ghost.progress = 1;
-    this.hud.message.setText(`${ghost.config.name} got sent home.`);
+    this.hud.message.setText(
+      hitType === "rear"
+        ? `${ghost.config.name} got rear-chomped.`
+        : `${ghost.config.name} got sent home.`
+    );
   }
 
   private loseLife(): void {

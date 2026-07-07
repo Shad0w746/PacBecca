@@ -9,6 +9,7 @@
 - Added a fireworks-style color burst around PacBecca when she collects a yellow power can.
 - Improved iframe responsiveness so PacBecca fits the embedded window without forced page scrolling.
 - Added ghost name labels directly on the ghost NPCs.
+- Added rear-contact ghost eating so PacBecca can send ghosts to respawn by touching them from behind.
 - Added a collapsible side menu for the objective, rules, and leaderboard.
 - Added a top-right game version badge.
 - Added a one-time hypno-rainbow wrong-hit save after PacBecca collects a yellow can.
