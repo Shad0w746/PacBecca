@@ -40,10 +40,12 @@ Expected result:
 7. After collecting at least one yellow can, collide with a normal ghost after vulnerability ends and confirm the hypno-rainbow save triggers for 5 seconds.
 8. Get caught three times or clear all 10 levels and confirm the leaderboard name form enables.
 9. Submit a score and confirm it appears in the top-10 list.
-10. Collapse and expand the side rules menu.
-11. Confirm the top-right version badge reads `v0.2.0`.
-12. Clear the level and confirm the next level title appears.
-13. Confirm Enter restarts after game over or victory.
+10. Close the leaderboard, press the lower-right `Reset` button, and confirm the game restarts at level 1 with score 0 and 3 lives.
+11. During active play, press the lower-right `Reset` button and confirm the same clean restart.
+12. Collapse and expand the side rules menu.
+13. Confirm the top-right version badge reads `v0.2.0`.
+14. Clear the level and confirm the next level title appears.
+15. Confirm Enter restarts after game over or victory.
 
 ## Next Build Pass
 

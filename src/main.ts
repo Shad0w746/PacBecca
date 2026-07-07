@@ -24,6 +24,7 @@ const config: Phaser.Types.Core.GameConfig = {
 let game: Phaser.Game | null = null;
 const startScreen = document.querySelector<HTMLElement>("#start-screen");
 const startButton = document.querySelector<HTMLButtonElement>("#start-game");
+const resetButton = document.querySelector<HTMLButtonElement>("#reset-game");
 const infoToggle = document.querySelector<HTMLButtonElement>("#info-toggle");
 const infoOverlay = document.querySelector<HTMLElement>("#info-overlay");
 const infoClose = document.querySelector<HTMLButtonElement>("#info-close");
@@ -91,10 +92,12 @@ function setGamePaused(paused: boolean): void {
   }
 }
 
-function setInfoOverlay(open: boolean): void {
+function setInfoOverlay(open: boolean, options: { restoreFocus?: boolean } = {}): void {
   if (!infoOverlay || !infoToggle) {
     return;
   }
+
+  const restoreFocus = options.restoreFocus ?? true;
 
   infoOverlay.hidden = !open;
   infoToggle.setAttribute("aria-expanded", String(open));
@@ -103,7 +106,7 @@ function setInfoOverlay(open: boolean): void {
 
   if (open) {
     infoClose?.focus();
-  } else {
+  } else if (restoreFocus) {
     infoToggle.focus();
   }
 }
@@ -175,6 +178,17 @@ function startGame(): void {
 }
 
 startButton?.addEventListener("click", startGame);
+
+resetButton?.addEventListener("click", () => {
+  if (!game) {
+    startGame();
+    return;
+  }
+
+  setInfoOverlay(false, { restoreFocus: false });
+  window.dispatchEvent(new CustomEvent("pacbecca:reset-game"));
+  resetButton.blur();
+});
 
 if (!startButton || !startScreen) {
   startGame();

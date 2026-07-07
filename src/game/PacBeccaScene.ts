@@ -118,7 +118,12 @@ export class PacBeccaScene extends Phaser.Scene {
   private pausedAfterHit = false;
   private rageOverlay?: Phaser.GameObjects.Container;
   private rageOverlayResumeEvent?: Phaser.Time.TimerEvent;
+  private lifeResetEvent?: Phaser.Time.TimerEvent;
+  private levelAdvanceEvent?: Phaser.Time.TimerEvent;
   private ended = false;
+  private readonly handleExternalReset = (): void => {
+    this.restartGame();
+  };
 
   constructor() {
     super("pacbecca");
@@ -146,6 +151,10 @@ export class PacBeccaScene extends Phaser.Scene {
     this.createHud();
     this.startLevel(0);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handleSecretPlayerClick, this);
+    window.addEventListener("pacbecca:reset-game", this.handleExternalReset);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener("pacbecca:reset-game", this.handleExternalReset);
+    });
   }
 
   update(_time: number, delta: number): void {
@@ -225,6 +234,11 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   private startLevel(levelIndex: number): void {
+    this.lifeResetEvent?.remove(false);
+    this.lifeResetEvent = undefined;
+    this.levelAdvanceEvent?.remove(false);
+    this.levelAdvanceEvent = undefined;
+
     this.levelIndex = levelIndex;
     this.level = LEVELS[levelIndex];
     this.maze = parseMaze(this.level.rows);
@@ -1162,7 +1176,9 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
-    this.time.delayedCall(900, () => {
+    this.lifeResetEvent?.remove(false);
+    this.lifeResetEvent = this.time.delayedCall(900, () => {
+      this.lifeResetEvent = undefined;
       this.resetPositions();
       this.pausedAfterHit = false;
     });
@@ -1206,7 +1222,11 @@ export class PacBeccaScene extends Phaser.Scene {
     }
 
     this.hud.message.setText("Level clear.");
-    this.time.delayedCall(900, () => this.startLevel(this.levelIndex + 1));
+    this.levelAdvanceEvent?.remove(false);
+    this.levelAdvanceEvent = this.time.delayedCall(900, () => {
+      this.levelAdvanceEvent = undefined;
+      this.startLevel(this.levelIndex + 1);
+    });
   }
 
   private endGame(won: boolean): void {

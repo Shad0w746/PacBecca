@@ -155,8 +155,31 @@ canvas {
   font-weight: 900;
 }
 
+.reset-button {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 31;
+  min-width: 88px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: #facc15;
+  color: #172554;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.reset-button:hover {
+  background: #fde047;
+}
+
 .info-toggle:focus-visible,
-.info-close:focus-visible {
+.info-close:focus-visible,
+.reset-button:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 3px;
 }
@@ -334,5 +357,13 @@ canvas {
     max-width: calc(100vw - 92px);
     padding: 0 10px;
     font-size: 12px;
+  }
+
+  .reset-button {
+    right: 10px;
+    bottom: 10px;
+    min-width: 76px;
+    min-height: 36px;
+    font-size: 13px;
   }
 }
