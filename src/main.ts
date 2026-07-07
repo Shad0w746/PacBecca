@@ -28,6 +28,7 @@ const resetButton = document.querySelector<HTMLButtonElement>("#reset-game");
 const infoToggle = document.querySelector<HTMLButtonElement>("#info-toggle");
 const infoOverlay = document.querySelector<HTMLElement>("#info-overlay");
 const infoClose = document.querySelector<HTMLButtonElement>("#info-close");
+const restartPrompt = document.querySelector<HTMLElement>("#restart-prompt");
 const root = document.documentElement;
 
 setupLeaderboard();
@@ -111,6 +112,14 @@ function setInfoOverlay(open: boolean, options: { restoreFocus?: boolean } = {})
   }
 }
 
+function setRestartPromptVisible(visible: boolean): void {
+  if (!restartPrompt) {
+    return;
+  }
+
+  restartPrompt.hidden = !visible;
+}
+
 infoToggle?.addEventListener("click", () => setInfoOverlay(true));
 infoClose?.addEventListener("click", () => setInfoOverlay(false));
 document.addEventListener(
@@ -148,7 +157,12 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("pacbecca:final-score", () => {
+  setRestartPromptVisible(true);
   setTimeout(() => setInfoOverlay(true), 0);
+});
+
+window.addEventListener("pacbecca:game-reset", () => {
+  setRestartPromptVisible(false);
 });
 
 window.addEventListener("message", (event) => {
@@ -181,10 +195,12 @@ startButton?.addEventListener("click", startGame);
 
 resetButton?.addEventListener("click", () => {
   if (!game) {
+    setRestartPromptVisible(false);
     startGame();
     return;
   }
 
+  setRestartPromptVisible(false);
   setInfoOverlay(false, { restoreFocus: false });
   window.dispatchEvent(new CustomEvent("pacbecca:reset-game"));
   resetButton.blur();

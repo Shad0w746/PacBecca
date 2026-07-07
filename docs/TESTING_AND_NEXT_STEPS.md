@@ -45,7 +45,8 @@ Expected result:
 12. Collapse and expand the side rules menu.
 13. Confirm the top-right version badge reads `v0.2.0`.
 14. Clear the level and confirm the next level title appears.
-15. Confirm Enter restarts after game over or victory.
+15. Confirm game over or victory shows a flashing highlighted `Enter Restarts` prompt.
+16. Confirm Enter restarts after game over or victory.
 
 ## Next Build Pass
 

@@ -4,6 +4,7 @@
 
 - Added a start screen button so the game waits for user input after page load or refresh.
 - Added a persistent lower-right reset button that can restart PacBecca from gameplay, game over, or the leaderboard screen.
+- Added a flashing highlighted "Enter Restarts" prompt when a game ends.
 - Added a browser-local top-10 leaderboard with name submission after a run ends.
 - Fixed leaderboard name entry so WASD and Enter no longer leak into PacBecca controls.
 - Added a randomized "BECCA RAGE" pause splash when the first powered wrong-way ghost hit triggers hypno mode.

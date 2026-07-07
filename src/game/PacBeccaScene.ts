@@ -118,6 +118,7 @@ export class PacBeccaScene extends Phaser.Scene {
   private pausedAfterHit = false;
   private rageOverlay?: Phaser.GameObjects.Container;
   private rageOverlayResumeEvent?: Phaser.Time.TimerEvent;
+  private restartPrompt?: Phaser.GameObjects.Container;
   private lifeResetEvent?: Phaser.Time.TimerEvent;
   private levelAdvanceEvent?: Phaser.Time.TimerEvent;
   private ended = false;
@@ -265,6 +266,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private clearLevelObjects(): void {
     this.clearRageOverlay();
+    this.clearRestartPrompt();
     this.pickups.forEach((pickup) => pickup.destroy());
     this.pickups.clear();
     this.ghosts.forEach((ghost) => ghost.container.destroy());
@@ -1231,12 +1233,56 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private endGame(won: boolean): void {
     this.ended = true;
+    this.showRestartPrompt();
     this.publishFinalScore(won);
     this.hud.message.setText(
       won
-        ? "PacBecca cleared all 10 levels. Enter restarts."
-        : "Game over. Enter restarts."
+        ? "PacBecca cleared all 10 levels."
+        : "Game over."
     );
+  }
+
+  private showRestartPrompt(): void {
+    this.clearRestartPrompt();
+
+    const back = this.add
+      .rectangle(480, 334, 380, 74, 0x111827, 0.92)
+      .setStrokeStyle(4, 0xfacc15, 0.95);
+    const text = this.add
+      .text(480, 334, "Enter Restarts", {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "42px",
+        fontStyle: "900",
+        color: "#fef08a",
+        stroke: "#111827",
+        strokeThickness: 8
+      })
+      .setOrigin(0.5);
+
+    this.restartPrompt = this.add
+      .container(0, 0, [back, text])
+      .setDepth(4700)
+      .setAlpha(0.42);
+
+    this.tweens.add({
+      targets: this.restartPrompt,
+      alpha: 1,
+      scale: 1.05,
+      duration: 560,
+      ease: "Sine.easeInOut",
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  private clearRestartPrompt(): void {
+    if (!this.restartPrompt) {
+      return;
+    }
+
+    this.tweens.killTweensOf(this.restartPrompt);
+    this.restartPrompt.destroy(true);
+    this.restartPrompt = undefined;
   }
 
   private publishFinalScore(won: boolean): void {
@@ -1260,6 +1306,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.wrongWaySaveUsed = false;
     this.hypnoRainbowUntilMs = 0;
     this.startLevel(0);
+    window.dispatchEvent(new CustomEvent("pacbecca:game-reset"));
   }
 
   private updateGhostAppearance(ghost: GhostEntity): void {
