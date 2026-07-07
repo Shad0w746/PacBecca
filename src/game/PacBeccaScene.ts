@@ -5,10 +5,14 @@ import {
   AVATAR_FRAME_SIZE,
   AVATAR_SHEET_ASSET_PATH,
   BOARD_OFFSET,
+  BRAZY_RAGE_SPLASH_DURATION_MS,
   BURST_METER_MAX,
   GAME_TITLE,
   GHOSTS,
-  LEVELS
+  LEVELS,
+  RAGE_SCREENSHOT_ASSET_PATHS,
+  RAGE_SCREENSHOT_KEYS,
+  WRONG_WAY_HYPNO_DURATION_MS
 } from "./config";
 import { targetForGhost } from "./ghostAi";
 import {
@@ -108,6 +112,8 @@ export class PacBeccaScene extends Phaser.Scene {
   private modeRemainingMs = 0;
   private frightenedUntilMs = 0;
   private pausedAfterHit = false;
+  private rageOverlay?: Phaser.GameObjects.Container;
+  private rageOverlayResumeEvent?: Phaser.Time.TimerEvent;
   private ended = false;
 
   constructor() {
@@ -119,6 +125,9 @@ export class PacBeccaScene extends Phaser.Scene {
     this.load.spritesheet("becca-head-sheet", AVATAR_SHEET_ASSET_PATH, {
       frameWidth: AVATAR_FRAME_SIZE,
       frameHeight: AVATAR_FRAME_SIZE
+    });
+    RAGE_SCREENSHOT_ASSET_PATHS.forEach((path, index) => {
+      this.load.image(RAGE_SCREENSHOT_KEYS[index], path);
     });
   }
 
@@ -237,6 +246,7 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   private clearLevelObjects(): void {
+    this.clearRageOverlay();
     this.pickups.forEach((pickup) => pickup.destroy());
     this.pickups.clear();
     this.ghosts.forEach((ghost) => ghost.container.destroy());
@@ -831,12 +841,131 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private triggerHypnoRainbow(): void {
     this.wrongWaySaveUsed = true;
-    this.hypnoRainbowUntilMs = this.time.now + 5000;
+    this.hypnoRainbowUntilMs = this.time.now + WRONG_WAY_HYPNO_DURATION_MS;
     this.ghostCombo = 0;
     this.reverseGhosts();
     this.cameras.main.flash(180, 255, 0, 210);
     this.cameras.main.shake(160, 0.004);
-    this.hud.message.setText("Wrong hit saved. Hypno rainbow for 5 seconds!");
+    this.hud.message.setText("BRAZY BECCA RAGE!");
+    this.showBrazyRageSplash();
+  }
+
+  private showBrazyRageSplash(): void {
+    this.clearRageOverlay();
+    const wasPaused = this.pausedAfterHit;
+    this.pausedAfterHit = true;
+
+    const screenshotKey =
+      RAGE_SCREENSHOT_KEYS[Phaser.Math.Between(0, RAGE_SCREENSHOT_KEYS.length - 1)];
+    const backdrop = this.add.rectangle(480, 320, 960, 640, 0x050510, 0.76);
+    const burst = this.add.star(480, 320, 18, 82, 330, 0xfff200, 0.28);
+    const screenshot = this.add.image(480, 342, screenshotKey);
+    const imageScale = Math.min(680 / screenshot.width, 430 / screenshot.height);
+    screenshot.setScale(imageScale);
+    screenshot.setAngle(Phaser.Math.Between(-3, 3));
+
+    const frame = this.add
+      .rectangle(
+        screenshot.x,
+        screenshot.y,
+        screenshot.displayWidth + 18,
+        screenshot.displayHeight + 18,
+        0xffffff,
+        0
+      )
+      .setStrokeStyle(5, 0xfacc15, 0.92);
+
+    const title = this.add
+      .text(480, 106, "BRAZY BECCA RAGE!", {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "58px",
+        fontStyle: "900",
+        color: "#fff200",
+        stroke: "#111827",
+        strokeThickness: 10
+      })
+      .setOrigin(0.5)
+      .setShadow(0, 5, "#f472b6", 8, true, true);
+
+    const subtitle = this.add
+      .text(480, 578, "Hypno mode starts after the splash.", {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "20px",
+        fontStyle: "800",
+        color: "#dbeafe",
+        stroke: "#111827",
+        strokeThickness: 4
+      })
+      .setOrigin(0.5);
+
+    this.rageOverlay = this.add
+      .container(0, 0, [backdrop, burst, screenshot, frame, title, subtitle])
+      .setDepth(5000)
+      .setAlpha(0);
+
+    this.tweens.add({
+      targets: this.rageOverlay,
+      alpha: 1,
+      duration: 120,
+      ease: "Quad.easeOut"
+    });
+    this.tweens.add({
+      targets: [screenshot, frame],
+      alpha: 0,
+      delay: 720,
+      duration: 1900,
+      ease: "Sine.easeInOut"
+    });
+    this.tweens.add({
+      targets: burst,
+      angle: 90,
+      alpha: 0,
+      scale: 1.1,
+      duration: BRAZY_RAGE_SPLASH_DURATION_MS,
+      ease: "Sine.easeOut"
+    });
+    this.tweens.add({
+      targets: title,
+      scale: 1.08,
+      y: 92,
+      yoyo: true,
+      repeat: 1,
+      duration: 260,
+      ease: "Back.easeOut"
+    });
+    this.tweens.add({
+      targets: [title, subtitle, backdrop],
+      alpha: 0,
+      delay: 2250,
+      duration: 650,
+      ease: "Sine.easeIn"
+    });
+
+    this.rageOverlayResumeEvent = this.time.delayedCall(BRAZY_RAGE_SPLASH_DURATION_MS, () => {
+      this.clearRageOverlay();
+      if (!this.ended) {
+        this.pausedAfterHit = wasPaused;
+        this.hypnoRainbowUntilMs = Math.max(
+          this.hypnoRainbowUntilMs,
+          this.time.now + WRONG_WAY_HYPNO_DURATION_MS
+        );
+        this.hud.message.setText("Wrong hit saved. Hypno rainbow for 5 seconds!");
+      }
+    });
+  }
+
+  private clearRageOverlay(): void {
+    this.rageOverlayResumeEvent?.remove(false);
+    this.rageOverlayResumeEvent = undefined;
+
+    if (!this.rageOverlay) {
+      return;
+    }
+
+    this.tweens.killTweensOf(this.rageOverlay.getAll());
+    this.tweens.killTweensOf(this.rageOverlay);
+    this.rageOverlay.destroy(true);
+    this.rageOverlay = undefined;
   }
 
   private checkCollisions(): void {

@@ -5,6 +5,18 @@ export const AVATAR_ASSET_PATH = "/assets/becca-head.png";
 export const AVATAR_SHEET_ASSET_PATH = "/assets/becca-head-sheet.png";
 export const AVATAR_FRAME_SIZE = 512;
 export const AVATAR_FRAME_COUNT = 6;
+export const RAGE_SCREENSHOT_ASSET_PATHS = [
+  "/assets/rage/brazy-becca-rage-1.jpg",
+  "/assets/rage/brazy-becca-rage-2.jpg",
+  "/assets/rage/brazy-becca-rage-3.jpg",
+  "/assets/rage/brazy-becca-rage-4.jpg",
+  "/assets/rage/brazy-becca-rage-5.jpg"
+];
+export const RAGE_SCREENSHOT_KEYS = RAGE_SCREENSHOT_ASSET_PATHS.map(
+  (_path, index) => `brazy-becca-rage-${index + 1}`
+);
+export const WRONG_WAY_HYPNO_DURATION_MS = 5000;
+export const BRAZY_RAGE_SPLASH_DURATION_MS = 3000;
 export const BOARD_OFFSET: GridPoint = { x: 32, y: 64 };
 export const BURST_METER_MAX = 100;
 
