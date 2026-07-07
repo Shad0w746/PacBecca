@@ -765,7 +765,10 @@ export class PacBeccaScene extends Phaser.Scene {
       this.score += 50;
       this.addBurst(18);
       this.powerCansCollected += 1;
-      this.powerHitRagePending = true;
+      // Arm the rage flash here; display it only after the next ghost contact.
+      if (this.powerCansCollected === 1) {
+        this.powerHitRagePending = true;
+      }
       this.showPowerPickupBurst();
       this.frightenGhosts(this.level.frightenedDurationMs);
     } else {
