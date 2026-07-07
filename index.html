@@ -13,6 +13,15 @@
     <div id="version-badge" class="version-badge" aria-label="Game version"></div>
     <main class="app-shell" aria-label="PacBecca game">
       <section class="game-frame">
+        <button
+          id="info-toggle"
+          class="info-toggle"
+          type="button"
+          aria-controls="info-overlay"
+          aria-expanded="false"
+        >
+          Rules and leaderboard
+        </button>
         <div id="game" aria-label="PacBecca canvas"></div>
         <div id="start-screen" class="start-screen" role="dialog" aria-labelledby="start-title">
           <div class="start-panel">
@@ -21,9 +30,21 @@
           </div>
         </div>
       </section>
-      <aside class="side-panel" aria-label="PacBecca rules and leaderboard">
-        <details class="info-menu" open>
-          <summary>Rules and leaderboard</summary>
+      <aside
+        id="info-overlay"
+        class="info-overlay"
+        aria-label="PacBecca rules and leaderboard"
+        aria-modal="true"
+        role="dialog"
+        hidden
+      >
+        <div class="info-menu">
+          <div class="info-header">
+            <h2 id="info-title">Rules and leaderboard</h2>
+            <button id="info-close" class="info-close" type="button" aria-label="Close rules and leaderboard">
+              Close
+            </button>
+          </div>
           <section class="menu-section" aria-labelledby="objective-title">
             <h2 id="objective-title">Objective</h2>
             <p>
@@ -62,7 +83,7 @@
               </p>
             </form>
           </section>
-        </details>
+        </div>
       </aside>
     </main>
     <script type="module" src="/src/main.ts"></script>

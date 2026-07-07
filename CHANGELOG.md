@@ -7,6 +7,8 @@
 - Fixed leaderboard name entry so WASD and Enter no longer leak into PacBecca controls.
 - Added a randomized "BRAZY BECCA RAGE!" pause splash when the first powered wrong-way ghost hit triggers hypno mode.
 - Added a fireworks-style color burst around PacBecca when she collects a yellow power can.
+- Improved iframe responsiveness so PacBecca fits the embedded window without forced page scrolling.
+- Added ghost name labels directly on the ghost NPCs.
 - Added a collapsible side menu for the objective, rules, and leaderboard.
 - Added a top-right game version badge.
 - Added a one-time hypno-rainbow wrong-hit save after PacBecca collects a yellow can.

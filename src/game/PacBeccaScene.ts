@@ -63,6 +63,7 @@ interface GhostFaceParts {
   leftPupil: Phaser.GameObjects.Arc;
   rightPupil: Phaser.GameObjects.Arc;
   facingMarker: Phaser.GameObjects.Text;
+  nameLabel: Phaser.GameObjects.Text;
 }
 
 interface GhostEntity extends MovingEntity {
@@ -407,6 +408,17 @@ export class PacBeccaScene extends Phaser.Scene {
           strokeThickness: 4
         })
         .setOrigin(0.5);
+      const nameLabel = this.add
+        .text(0, 15, config.name, {
+          fontFamily: "Inter, Arial, sans-serif",
+          fontSize: "7px",
+          fontStyle: "900",
+          color: "#f8fafc",
+          align: "center",
+          stroke: "#111827",
+          strokeThickness: 3
+        })
+        .setOrigin(0.5, 0);
       const container = this.add.container(world.x, world.y, [
         body,
         shine,
@@ -414,7 +426,8 @@ export class PacBeccaScene extends Phaser.Scene {
         rightEye,
         leftPupil,
         rightPupil,
-        facingMarker
+        facingMarker,
+        nameLabel
       ]);
       container.setDepth(15);
       return {
@@ -429,7 +442,8 @@ export class PacBeccaScene extends Phaser.Scene {
           rightEye,
           leftPupil,
           rightPupil,
-          facingMarker
+          facingMarker,
+          nameLabel
         },
         lastFacing: "left",
         tile: start,
@@ -1149,7 +1163,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private updateGhostAppearance(ghost: GhostEntity): void {
     this.updateGhostFacing(ghost);
-    const { body, shine, leftEye, rightEye, leftPupil, rightPupil, facingMarker } =
+    const { body, shine, leftEye, rightEye, leftPupil, rightPupil, facingMarker, nameLabel } =
       ghost.face;
 
     if (ghost.mood === "eaten") {
@@ -1160,6 +1174,8 @@ export class PacBeccaScene extends Phaser.Scene {
       leftPupil.setAlpha(1);
       rightPupil.setAlpha(1);
       facingMarker.setAlpha(1);
+      nameLabel.setAlpha(0.82);
+      nameLabel.setColor("#dbeafe");
       return;
     }
 
@@ -1171,6 +1187,8 @@ export class PacBeccaScene extends Phaser.Scene {
       leftPupil.setAlpha(1);
       rightPupil.setAlpha(1);
       facingMarker.setAlpha(1);
+      nameLabel.setAlpha(1);
+      nameLabel.setColor("#fef08a");
       return;
     }
 
@@ -1181,6 +1199,8 @@ export class PacBeccaScene extends Phaser.Scene {
     leftPupil.setAlpha(1);
     rightPupil.setAlpha(1);
     facingMarker.setAlpha(1);
+    nameLabel.setAlpha(0.95);
+    nameLabel.setColor("#f8fafc");
   }
 
   private updateGhostFacing(ghost: GhostEntity): void {
