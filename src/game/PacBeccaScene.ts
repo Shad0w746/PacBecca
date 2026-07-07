@@ -743,6 +743,7 @@ export class PacBeccaScene extends Phaser.Scene {
       this.score += 50;
       this.addBurst(18);
       this.powerCansCollected += 1;
+      this.showPowerPickupBurst();
       this.frightenGhosts(this.level.frightenedDurationMs);
     } else {
       this.score += 125;
@@ -758,6 +759,56 @@ export class PacBeccaScene extends Phaser.Scene {
     this.frightenedUntilMs = Math.max(this.frightenedUntilMs, this.time.now + durationMs);
     this.ghostCombo = 0;
     this.reverseGhosts();
+  }
+
+  private showPowerPickupBurst(): void {
+    const colors = [
+      0xfef08a,
+      0x38bdf8,
+      0xf472b6,
+      0x34d399,
+      0xfb7185,
+      0xa78bfa
+    ];
+    const burst = this.add
+      .container(this.player.container.x, this.player.container.y)
+      .setDepth(1200);
+    const ring = this.add
+      .circle(0, 0, 16, 0xffffff, 0)
+      .setStrokeStyle(4, 0xfef08a, 0.9);
+
+    burst.add(ring);
+    this.tweens.add({
+      targets: ring,
+      alpha: 0,
+      scale: 3.1,
+      duration: 540,
+      ease: "Sine.easeOut"
+    });
+
+    Array.from({ length: 24 }, (_value, index) => {
+      const angle = (Math.PI * 2 * index) / 24 + Phaser.Math.FloatBetween(-0.12, 0.12);
+      const distance = Phaser.Math.Between(26, 58);
+      const color = colors[index % colors.length];
+      const spark =
+        index % 4 === 0
+          ? this.add.star(0, 0, 5, 2, Phaser.Math.Between(5, 8), color, 1)
+          : this.add.circle(0, 0, Phaser.Math.Between(2, 4), color, 1);
+
+      spark.setBlendMode(Phaser.BlendModes.ADD);
+      burst.add(spark);
+      this.tweens.add({
+        targets: spark,
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+        alpha: 0,
+        scale: 0.2,
+        duration: Phaser.Math.Between(460, 720),
+        ease: "Cubic.easeOut"
+      });
+    });
+
+    this.time.delayedCall(760, () => burst.destroy(true));
   }
 
   private triggerBurst(): void {
