@@ -14,6 +14,7 @@ import {
   RAGE_SCREENSHOT_KEYS,
   WRONG_WAY_HYPNO_DURATION_MS
 } from "./config";
+import { isRearContact } from "./collision";
 import { targetForGhost } from "./ghostAi";
 import {
   keyOf,
@@ -63,6 +64,7 @@ interface GhostFaceParts {
   leftPupil: Phaser.GameObjects.Arc;
   rightPupil: Phaser.GameObjects.Arc;
   facingMarker: Phaser.GameObjects.Text;
+  nameTagBack: Phaser.GameObjects.Rectangle;
   nameLabel: Phaser.GameObjects.Text;
 }
 
@@ -81,6 +83,7 @@ export class PacBeccaScene extends Phaser.Scene {
   private lives = 3;
   private burstMeter = 0;
   private powerCansCollected = 0;
+  private powerHitRagePending = false;
   private wrongWaySaveUsed = false;
   private hypnoRainbowUntilMs = 0;
   private secretHypnoUsedThisSession = false;
@@ -408,17 +411,20 @@ export class PacBeccaScene extends Phaser.Scene {
           strokeThickness: 4
         })
         .setOrigin(0.5);
+      const nameTagBack = this.add
+        .rectangle(0, 21, Math.max(42, config.name.length * 7 + 10), 14, 0x050712, 0.78)
+        .setStrokeStyle(1, config.accent, 0.88);
       const nameLabel = this.add
-        .text(0, 15, config.name, {
+        .text(0, 21, config.name, {
           fontFamily: "Inter, Arial, sans-serif",
-          fontSize: "7px",
+          fontSize: "9px",
           fontStyle: "900",
           color: "#f8fafc",
           align: "center",
           stroke: "#111827",
-          strokeThickness: 3
+          strokeThickness: 2
         })
-        .setOrigin(0.5, 0);
+        .setOrigin(0.5);
       const container = this.add.container(world.x, world.y, [
         body,
         shine,
@@ -427,6 +433,7 @@ export class PacBeccaScene extends Phaser.Scene {
         leftPupil,
         rightPupil,
         facingMarker,
+        nameTagBack,
         nameLabel
       ]);
       container.setDepth(15);
@@ -443,6 +450,7 @@ export class PacBeccaScene extends Phaser.Scene {
           leftPupil,
           rightPupil,
           facingMarker,
+          nameTagBack,
           nameLabel
         },
         lastFacing: "left",
@@ -757,6 +765,10 @@ export class PacBeccaScene extends Phaser.Scene {
       this.score += 50;
       this.addBurst(18);
       this.powerCansCollected += 1;
+      // Arm the rage flash here; display it only after the next ghost contact.
+      if (this.powerCansCollected === 1) {
+        this.powerHitRagePending = true;
+      }
       this.showPowerPickupBurst();
       this.frightenGhosts(this.level.frightenedDurationMs);
     } else {
@@ -911,8 +923,46 @@ export class PacBeccaScene extends Phaser.Scene {
     this.reverseGhosts();
     this.cameras.main.flash(180, 255, 0, 210);
     this.cameras.main.shake(160, 0.004);
-    this.hud.message.setText("BRAZY BECCA RAGE!");
+    this.hud.message.setText("BECCA RAGE");
     this.showBrazyRageSplash();
+  }
+
+  private flashPendingPowerHitRage(): void {
+    if (!this.powerHitRagePending) {
+      return;
+    }
+
+    this.powerHitRagePending = false;
+    this.cameras.main.flash(180, 255, 236, 59);
+    this.showBeccaRageTextFlash();
+  }
+
+  private showBeccaRageTextFlash(): void {
+    const text = this.add
+      .text(480, 118, "BECCA RAGE", {
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: "66px",
+        fontStyle: "900",
+        color: "#fff200",
+        stroke: "#111827",
+        strokeThickness: 12
+      })
+      .setOrigin(0.5)
+      .setDepth(4900)
+      .setAlpha(0)
+      .setScale(0.84)
+      .setShadow(0, 6, "#f472b6", 9, true, true);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 1,
+      scale: 1.08,
+      duration: 130,
+      ease: "Back.easeOut",
+      yoyo: true,
+      hold: 360,
+      onComplete: () => text.destroy()
+    });
   }
 
   private showBrazyRageSplash(): void {
@@ -941,9 +991,9 @@ export class PacBeccaScene extends Phaser.Scene {
       .setStrokeStyle(5, 0xfacc15, 0.92);
 
     const title = this.add
-      .text(480, 106, "BRAZY BECCA RAGE!", {
+      .text(480, 106, "BECCA RAGE", {
         fontFamily: "Inter, Arial, sans-serif",
-        fontSize: "58px",
+        fontSize: "66px",
         fontStyle: "900",
         color: "#fff200",
         stroke: "#111827",
@@ -1048,11 +1098,19 @@ export class PacBeccaScene extends Phaser.Scene {
       }
 
       if (this.isGhostVulnerable(ghost)) {
+        this.flashPendingPowerHitRage();
         this.eatGhost(ghost);
         return;
       }
 
+      if (this.isRearGhostContact(playerBounds, ghostBounds, ghost)) {
+        this.flashPendingPowerHitRage();
+        this.eatGhost(ghost, "rear");
+        return;
+      }
+
       if (this.canTriggerWrongWaySave()) {
+        this.powerHitRagePending = false;
         this.triggerHypnoRainbow();
         this.eatGhost(ghost);
         return;
@@ -1062,13 +1120,35 @@ export class PacBeccaScene extends Phaser.Scene {
     });
   }
 
-  private eatGhost(ghost: GhostEntity): void {
+  private isRearGhostContact(
+    playerBounds: Phaser.Geom.Rectangle,
+    ghostBounds: Phaser.Geom.Rectangle,
+    ghost: GhostEntity
+  ): boolean {
+    return isRearContact({
+      attacker: {
+        x: playerBounds.centerX,
+        y: playerBounds.centerY
+      },
+      target: {
+        x: ghostBounds.centerX,
+        y: ghostBounds.centerY
+      },
+      targetFacing: ghost.lastFacing
+    });
+  }
+
+  private eatGhost(ghost: GhostEntity, hitType: "normal" | "rear" = "normal"): void {
     this.ghostCombo += 1;
     this.score += 200 * this.ghostCombo;
     ghost.mood = "eaten";
     ghost.direction = "none";
     ghost.progress = 1;
-    this.hud.message.setText(`${ghost.config.name} got sent home.`);
+    this.hud.message.setText(
+      hitType === "rear"
+        ? `${ghost.config.name} got rear-chomped.`
+        : `${ghost.config.name} got sent home.`
+    );
   }
 
   private loseLife(): void {
@@ -1156,6 +1236,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.lives = 3;
     this.burstMeter = 0;
     this.powerCansCollected = 0;
+    this.powerHitRagePending = false;
     this.wrongWaySaveUsed = false;
     this.hypnoRainbowUntilMs = 0;
     this.startLevel(0);
@@ -1163,8 +1244,17 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private updateGhostAppearance(ghost: GhostEntity): void {
     this.updateGhostFacing(ghost);
-    const { body, shine, leftEye, rightEye, leftPupil, rightPupil, facingMarker, nameLabel } =
-      ghost.face;
+    const {
+      body,
+      shine,
+      leftEye,
+      rightEye,
+      leftPupil,
+      rightPupil,
+      facingMarker,
+      nameTagBack,
+      nameLabel
+    } = ghost.face;
 
     if (ghost.mood === "eaten") {
       body.setFillStyle(0x111827, 0.25);
@@ -1174,6 +1264,9 @@ export class PacBeccaScene extends Phaser.Scene {
       leftPupil.setAlpha(1);
       rightPupil.setAlpha(1);
       facingMarker.setAlpha(1);
+      nameTagBack.setAlpha(0.7);
+      nameTagBack.setFillStyle(0x050712, 0.7);
+      nameTagBack.setStrokeStyle(1, 0xdbeafe, 0.65);
       nameLabel.setAlpha(0.82);
       nameLabel.setColor("#dbeafe");
       return;
@@ -1187,6 +1280,9 @@ export class PacBeccaScene extends Phaser.Scene {
       leftPupil.setAlpha(1);
       rightPupil.setAlpha(1);
       facingMarker.setAlpha(1);
+      nameTagBack.setAlpha(0.98);
+      nameTagBack.setFillStyle(0x23164a, 0.88);
+      nameTagBack.setStrokeStyle(1, 0xfef08a, 0.95);
       nameLabel.setAlpha(1);
       nameLabel.setColor("#fef08a");
       return;
@@ -1199,6 +1295,9 @@ export class PacBeccaScene extends Phaser.Scene {
     leftPupil.setAlpha(1);
     rightPupil.setAlpha(1);
     facingMarker.setAlpha(1);
+    nameTagBack.setAlpha(0.92);
+    nameTagBack.setFillStyle(0x050712, 0.78);
+    nameTagBack.setStrokeStyle(1, ghost.config.accent, 0.88);
     nameLabel.setAlpha(0.95);
     nameLabel.setColor("#f8fafc");
   }
