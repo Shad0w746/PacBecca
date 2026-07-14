@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { rankLeaderboardEntries, sanitizeName, type LeaderboardEntry } from "./leaderboard";
+import {
+  formatLeaderboardText,
+  parseLeaderboardText,
+  rankLeaderboardEntries,
+  sanitizeName,
+  type LeaderboardEntry
+} from "./leaderboard";
 
 function entry(name: string, score: number, createdAt: string): LeaderboardEntry {
   return {
@@ -36,5 +42,23 @@ describe("leaderboard", () => {
   it("sanitizes empty and long names", () => {
     expect(sanitizeName("   ")).toBe("Player");
     expect(sanitizeName("  Becca   Champion  Forever  ")).toBe("Becca Champion");
+  });
+
+  it("parses leaderboard.txt rows", () => {
+    const parsed = parseLeaderboardText(`name\tscore\tlevel\twon\tcreatedAt
+Old\t500\t3\tfalse\t2026-07-06T17:01:00.000Z
+Winner\t1200\t10\ttrue\t2026-07-06T17:02:00.000Z
+`);
+
+    expect(parsed.map((item) => item.name)).toEqual(["Winner", "Old"]);
+    expect(parsed[0]).toMatchObject({ score: 1200, level: 10, won: true });
+  });
+
+  it("formats leaderboard entries as txt rows", () => {
+    const text = formatLeaderboardText([entry("Old", 500, "2026-07-06T17:01:00.000Z")]);
+
+    expect(text).toBe(
+      "name\tscore\tlevel\twon\tcreatedAt\nOld\t500\t1\tfalse\t2026-07-06T17:01:00.000Z\n"
+    );
   });
 });

@@ -2,7 +2,7 @@
 
 ## Local Setup
 
-From `C:\Users\DanWa\Documents\PacBecca`:
+From the PacBecca repo root:
 
 ```powershell
 pnpm install
@@ -29,6 +29,17 @@ Expected result:
 - TypeScript compiles.
 - Vite creates `dist/`.
 
+## Global Leaderboard Verification
+
+After the Cloudflare Worker is deployed:
+
+```powershell
+$env:VITE_LEADERBOARD_API_URL = "https://pacbecca-leaderboard.danwalkerworks.workers.dev/api/leaderboard"
+pnpm build:squarespace
+```
+
+Publish the regenerated Squarespace embed, submit a score from the live page, then open the same page in a second browser session or device and confirm the score appears there too.
+
 ## Manual Game Test
 
 1. Open the local URL.
@@ -37,16 +48,17 @@ Expected result:
 4. Collect pellets and hearts until the Burst meter fills.
 5. Press Space and confirm ghosts become vulnerable.
 6. Eat a yellow can and confirm vulnerability also triggers.
-7. After collecting at least one yellow can, collide with a normal ghost after vulnerability ends and confirm the hypno-rainbow save triggers for 5 seconds.
-8. Get caught three times or clear all 10 levels and confirm the leaderboard name form enables.
-9. Submit a score and confirm it appears in the top-10 list.
-10. Close the leaderboard, press the lower-right `Reset` button, and confirm the game restarts at level 1 with score 0 and 3 lives.
-11. During active play, press the lower-right `Reset` button and confirm the same clean restart.
-12. Collapse and expand the side rules menu.
-13. Confirm the top-right version badge reads `v0.2.0`.
-14. Clear the level and confirm the next level title appears.
-15. Confirm game over or victory shows a flashing highlighted `Enter Restarts` prompt.
-16. Confirm Enter restarts after game over or victory.
+7. Eat all five ghosts in one round and confirm the next level starts.
+8. After collecting at least one yellow can, collide with a normal ghost after vulnerability ends and confirm the hypno-rainbow save triggers for 5 seconds.
+9. Get caught three times or clear all 10 levels and confirm the leaderboard name form enables.
+10. Submit a score and confirm it appears in the top-10 list.
+11. Close the leaderboard, press the lower-right `Reset` button, and confirm the game restarts at level 1 with score 0 and 3 lives.
+12. During active play, press the lower-right `Reset` button and confirm the same clean restart.
+13. Collapse and expand the side rules menu.
+14. Confirm the top-right version badge reads `v0.2.0`.
+15. Clear the level and confirm the next level title appears.
+16. Confirm game over or victory shows a flashing highlighted `Enter Restarts` prompt.
+17. Confirm Enter restarts after game over or victory.
 
 ## Next Build Pass
 

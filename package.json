@@ -1,6 +1,6 @@
 {
   "name": "pacbecca",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "private": true,
   "description": "PacBecca, an original maze-chase browser game inspired by classic arcade design.",
   "type": "module",
@@ -8,10 +8,13 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "build:squarespace": "vite build --config vite.squarespace.config.ts",
+    "build:squarespace:embed": "node scripts/build-squarespace-embed.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm test && pnpm build"
+    "check": "pnpm test && pnpm build",
+    "leaderboard:dev": "pnpm dlx wrangler dev --config workers/leaderboard/wrangler.toml",
+    "leaderboard:deploy": "pnpm dlx wrangler deploy --config workers/leaderboard/wrangler.toml"
   },
   "dependencies": {
     "phaser": "^3.90.0"

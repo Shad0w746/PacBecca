@@ -11,10 +11,11 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 - One original maze for the first version.
 - Ten level configs that scale speed, color, and vulnerability timing.
 - Five ghosts with named personalities.
+- Ghost-sweep round win: eating each ghost at least once in one level immediately clears the round.
 - Yellow power cans with blue writing.
 - Faux-3D Becca head animation with a direction-aware chomping mouth.
 - First bad ghost hit after collecting a yellow can triggers a one-time 5-second hypno-rainbow save.
-- Browser-local top-10 leaderboard with name submission after a run ends.
+- Txt-file-backed top-10 leaderboard with name submission after a run ends.
 - Collapsible side menu explaining objective, rules, and leaderboard.
 - Persistent top-right version badge.
 - Replaceable Becca head image.

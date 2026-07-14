@@ -16,6 +16,7 @@ import {
 } from "./config";
 import { isRearContact } from "./collision";
 import { targetForGhost } from "./ghostAi";
+import { hasCompletedGhostSweep } from "./ghostSweep";
 import {
   keyOf,
   neighborInDirection,
@@ -50,10 +51,15 @@ interface PlayerEntity extends MovingEntity {
   sprite: Phaser.GameObjects.Sprite;
   ring: Phaser.GameObjects.Arc;
   shadow: Phaser.GameObjects.Ellipse;
+  faceDetails: Phaser.GameObjects.Graphics;
   mouth: Phaser.GameObjects.Graphics;
   gloss: Phaser.GameObjects.Arc;
   chompTimeMs: number;
   lastFacing: Exclude<Direction, "none">;
+  lastFrameIndex: number;
+  faceDetailKey: string;
+  mouthKey: string;
+  hypnoRenderKey: string;
 }
 
 interface GhostFaceParts {
@@ -75,9 +81,53 @@ interface GhostEntity extends MovingEntity {
   eatenUntilMs: number;
   face: GhostFaceParts;
   lastFacing: Exclude<Direction, "none">;
+  renderFacing: Exclude<Direction, "none"> | "";
+  renderStyleKey: string;
 }
 
+interface HudRenderCache {
+  score: string;
+  level: string;
+  lives: string;
+  mode: string;
+  burst: string;
+  ghostList: string;
+  meterWidth: number;
+}
+
+const PLAYER_FRAME_SEQUENCE = [5, 2, 1, 0, 4, 3, 4, 0, 1, 2] as const;
+const PLAYER_OPEN_BUCKETS = 8;
+const HYPNO_COLOR_BUCKETS = 18;
+const COLLISION_RADIUS_SQUARED = 16 * 16;
+
+const PLAYER_LEAN_BY_DIRECTION: Record<Exclude<Direction, "none">, number> = {
+  up: 0,
+  down: 0,
+  left: -8,
+  right: 8
+};
+
+const DIRECTION_ANGLE_BY_DIRECTION: Record<Exclude<Direction, "none">, number> = {
+  right: 0,
+  down: Math.PI / 2,
+  left: Math.PI,
+  up: -Math.PI / 2
+};
+
+const GHOST_FACING_VECTORS: Record<
+  Exclude<Direction, "none">,
+  { x: number; y: number; marker: string }
+> = {
+  up: { x: 0, y: -1, marker: "^" },
+  down: { x: 0, y: 1, marker: "v" },
+  left: { x: -1, y: 0, marker: "<" },
+  right: { x: 1, y: 0, marker: ">" }
+};
+
 export class PacBeccaScene extends Phaser.Scene {
+  private readonly ghostListText = GHOSTS.map(
+    (ghost) => `${ghost.name}: ${ghost.personality}`
+  ).join("\n");
   private levelIndex = 0;
   private score = 0;
   private lives = 3;
@@ -90,6 +140,8 @@ export class PacBeccaScene extends Phaser.Scene {
   private secretHypnoLevelIndex: number | null = null;
   private secretClickTimesMs: number[] = [];
   private ghostCombo = 0;
+  private ghostEatsThisRound = 0;
+  private eatenGhostIds = new Set<string>();
   private maze!: MazeModel;
   private level!: LevelConfig;
   private player!: PlayerEntity;
@@ -108,6 +160,15 @@ export class PacBeccaScene extends Phaser.Scene {
     ghostList: Phaser.GameObjects.Text;
     message: Phaser.GameObjects.Text;
     meterBar: Phaser.GameObjects.Rectangle;
+  };
+  private hudCache: HudRenderCache = {
+    score: "",
+    level: "",
+    lives: "",
+    mode: "",
+    burst: "",
+    ghostList: "",
+    meterWidth: -1
   };
   private wallLayer!: Phaser.GameObjects.Graphics;
   private floorLayer!: Phaser.GameObjects.Graphics;
@@ -170,13 +231,20 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
-    if (!this.isTypingInTextField()) {
+    if (this.isTypingInTextField()) {
+      this.desiredDirection = "none";
+    } else {
       this.readControls();
     }
     this.updateMode(delta);
     this.updatePlayer(delta);
+    if (this.levelAdvanceEvent || this.ended) {
+      this.updateHud();
+      return;
+    }
     this.updateGhosts(delta);
     this.checkCollisions();
+    this.checkGhostSweepWin();
     this.updateHud();
   }
 
@@ -251,6 +319,8 @@ export class PacBeccaScene extends Phaser.Scene {
     this.secretHypnoLevelIndex = null;
     this.secretClickTimesMs = [];
     this.ghostCombo = 0;
+    this.ghostEatsThisRound = 0;
+    this.eatenGhostIds.clear();
     this.desiredDirection = "none";
     this.pausedAfterHit = false;
     this.ended = false;
@@ -380,12 +450,14 @@ export class PacBeccaScene extends Phaser.Scene {
     const shadow = this.add.ellipse(2, 9, 30, 11, 0x050712, 0.42);
     const ring = this.add.circle(0, 0, 17, 0xffffff, 0).setStrokeStyle(3, 0xf9a8d4, 0.95);
     const sprite = this.add.sprite(0, -2, "becca-head-sheet", 5).setDisplaySize(34, 34);
+    const faceDetails = this.add.graphics();
     const gloss = this.add.circle(-6, -9, 5, 0xffffff, 0.2).setScale(1.55, 0.7);
     const mouth = this.add.graphics();
     const container = this.add.container(world.x, world.y, [
       shadow,
       ring,
       sprite,
+      faceDetails,
       gloss,
       mouth
     ]);
@@ -400,10 +472,15 @@ export class PacBeccaScene extends Phaser.Scene {
       sprite,
       ring,
       shadow,
+      faceDetails,
       mouth,
       gloss,
       chompTimeMs: 0,
-      lastFacing: "right"
+      lastFacing: "right",
+      lastFrameIndex: 5,
+      faceDetailKey: "",
+      mouthKey: "",
+      hypnoRenderKey: ""
     };
   }
 
@@ -470,6 +547,8 @@ export class PacBeccaScene extends Phaser.Scene {
           nameLabel
         },
         lastFacing: "left",
+        renderFacing: "",
+        renderStyleKey: "",
         tile: start,
         fromTile: start,
         toTile: start,
@@ -645,16 +724,20 @@ export class PacBeccaScene extends Phaser.Scene {
     }
 
     entity.progress = Math.min(1, entity.progress + (tilesPerSecond * delta) / 1000);
-    const from = toWorld(entity.fromTile, BOARD_OFFSET);
-    const to = toWorld(entity.toTile, BOARD_OFFSET);
-    const x = Phaser.Math.Linear(from.x, to.x, entity.progress);
-    const y = Phaser.Math.Linear(from.y, to.y, entity.progress);
+    const fromX = BOARD_OFFSET.x + entity.fromTile.x * TILE_SIZE;
+    const fromY = BOARD_OFFSET.y + entity.fromTile.y * TILE_SIZE;
+    const toX = BOARD_OFFSET.x + entity.toTile.x * TILE_SIZE;
+    const toY = BOARD_OFFSET.y + entity.toTile.y * TILE_SIZE;
+    const x = Phaser.Math.Linear(fromX, toX, entity.progress);
+    const y = Phaser.Math.Linear(fromY, toY, entity.progress);
     entity.container.setPosition(x, y);
   }
 
   private placeEntity(entity: MovingEntity, tile: GridPoint): void {
-    const world = toWorld(tile, BOARD_OFFSET);
-    entity.container.setPosition(world.x, world.y);
+    entity.container.setPosition(
+      BOARD_OFFSET.x + tile.x * TILE_SIZE,
+      BOARD_OFFSET.y + tile.y * TILE_SIZE
+    );
   }
 
   private canMove(tile: GridPoint, direction: Direction): boolean {
@@ -673,23 +756,22 @@ export class PacBeccaScene extends Phaser.Scene {
       this.player.chompTimeMs = Math.max(0, this.player.chompTimeMs - delta * 0.5);
     }
 
-    const frameSequence = [5, 2, 1, 0, 4, 3, 4, 0, 1, 2];
     const frameIndex = moving
-      ? frameSequence[
-          Math.floor(this.player.chompTimeMs / 95) % frameSequence.length
+      ? PLAYER_FRAME_SEQUENCE[
+          Math.floor(this.player.chompTimeMs / 95) % PLAYER_FRAME_SEQUENCE.length
         ] % AVATAR_FRAME_COUNT
       : 5;
-    this.player.sprite.setFrame(frameIndex);
+    if (frameIndex !== this.player.lastFrameIndex) {
+      this.player.lastFrameIndex = frameIndex;
+      this.player.sprite.setFrame(frameIndex);
+    }
 
     const phase = (this.player.chompTimeMs % 300) / 300;
     const openAmount = moving ? Math.sin(phase * Math.PI) : 0;
+    const openBucket = moving ? Math.round(openAmount * PLAYER_OPEN_BUCKETS) : 0;
+    const renderOpenAmount = openBucket / PLAYER_OPEN_BUCKETS;
     const bob = moving ? Math.sin(this.player.chompTimeMs / 72) * 1.2 : 0;
-    const lean = {
-      up: 0,
-      down: 0,
-      left: -8,
-      right: 8
-    }[this.player.lastFacing];
+    const lean = PLAYER_LEAN_BY_DIRECTION[this.player.lastFacing];
 
     this.player.sprite.setPosition(0, -2 + bob);
     this.player.sprite.setAngle(lean);
@@ -697,70 +779,200 @@ export class PacBeccaScene extends Phaser.Scene {
     this.player.ring.setScale(1 + openAmount * 0.035, 1 - openAmount * 0.02);
     this.player.shadow.setScale(1 + openAmount * 0.18, 0.92 - openAmount * 0.04);
     this.player.shadow.setAlpha(0.34 + openAmount * 0.16);
+    this.drawPlayerFaceDetails(bob, lean, renderOpenAmount, openBucket);
     this.updateHypnoRainbowAppearance();
-    this.drawPlayerMouth(openAmount);
+    this.drawPlayerMouth(renderOpenAmount, bob, lean, openBucket);
   }
 
   private updateHypnoRainbowAppearance(): void {
     if (!this.isHypnoRainbowActive()) {
-      this.player.sprite.clearTint();
-      this.player.ring.setStrokeStyle(3, 0xf9a8d4, 0.95);
-      this.player.gloss.setFillStyle(0xffffff, 0.2);
-      this.player.container.setScale(1);
+      if (this.player.hypnoRenderKey !== "normal") {
+        this.player.hypnoRenderKey = "normal";
+        this.player.sprite.clearTint();
+        this.player.ring.setStrokeStyle(3, 0xf9a8d4, 0.95);
+        this.player.gloss.setFillStyle(0xffffff, 0.2);
+        this.player.container.setScale(1);
+      }
       return;
     }
 
     const phase = ((this.time.now % 650) / 650);
-    const tint = Phaser.Display.Color.HSVToRGB(phase, 0.9, 1).color;
-    const accent = Phaser.Display.Color.HSVToRGB((phase + 0.33) % 1, 0.85, 1).color;
-    this.player.sprite.setTint(tint);
-    this.player.ring.setStrokeStyle(5, accent, 1);
-    this.player.gloss.setFillStyle(0xffffff, 0.45);
+    const colorBucket = Math.floor(phase * HYPNO_COLOR_BUCKETS);
+    const renderKey = `hypno:${colorBucket}`;
+    if (renderKey !== this.player.hypnoRenderKey) {
+      this.player.hypnoRenderKey = renderKey;
+      const bucketPhase = colorBucket / HYPNO_COLOR_BUCKETS;
+      const tint = Phaser.Display.Color.HSVToRGB(bucketPhase, 0.9, 1).color;
+      const accent = Phaser.Display.Color.HSVToRGB((bucketPhase + 0.33) % 1, 0.85, 1).color;
+      this.player.sprite.setTint(tint);
+      this.player.ring.setStrokeStyle(5, accent, 1);
+      this.player.gloss.setFillStyle(0xffffff, 0.45);
+    }
     this.player.container.setScale(1.08 + Math.sin(this.time.now / 60) * 0.05);
   }
 
-  private drawPlayerMouth(openAmount: number): void {
-    this.player.mouth.clear();
-    if (openAmount <= 0.06) {
+  private drawPlayerFaceDetails(
+    bob: number,
+    lean: number,
+    openAmount: number,
+    openBucket: number
+  ): void {
+    const details = this.player.faceDetails;
+    details.setPosition(0, -2 + bob);
+    details.setAngle(lean);
+    const renderKey = `${lean}:${openBucket}`;
+    if (renderKey === this.player.faceDetailKey) {
       return;
     }
 
-    const directionAngle = {
-      right: 0,
-      down: Math.PI / 2,
-      left: Math.PI,
-      up: -Math.PI / 2
-    }[this.player.lastFacing];
-    const radius = 21;
-    const halfAngle = 0.12 + openAmount * 0.72;
+    this.player.faceDetailKey = renderKey;
+    details.clear();
 
-    this.player.mouth.fillStyle(0x070711, 0.96);
-    this.player.mouth.beginPath();
-    this.player.mouth.moveTo(0, -2);
-    this.player.mouth.arc(
-      0,
-      -2,
+    details.lineStyle(1.2, 0xffffff, 0.24);
+    details.beginPath();
+    details.arc(0, 0, 14.4, Math.PI * 1.1, Math.PI * 1.82, false);
+    details.strokePath();
+
+    details.lineStyle(1.6, 0xfef3c7, 0.32);
+    details.lineBetween(-9, -12, -11, 7);
+    details.lineBetween(8, -12, 11, 7);
+
+    details.fillStyle(0xfb7185, 0.2 + openAmount * 0.08);
+    details.fillEllipse(-7, 4, 5.4, 3.3);
+    details.fillEllipse(7, 4, 5.4, 3.3);
+
+    details.lineStyle(1, 0xffffff, 0.22);
+    details.lineBetween(0, -4, -1.3, 2);
+    details.lineBetween(-1.3, 2, 1.2, 2.8);
+  }
+
+  private drawPlayerMouth(
+    openAmount: number,
+    bob: number,
+    lean: number,
+    openBucket: number
+  ): void {
+    const mouth = this.player.mouth;
+    mouth.setPosition(0, bob);
+    mouth.setAngle(lean * 0.35);
+    const renderKey = `${this.player.lastFacing}:${openBucket}`;
+    if (renderKey === this.player.mouthKey) {
+      return;
+    }
+
+    this.player.mouthKey = renderKey;
+    mouth.clear();
+
+    if (openAmount <= 0.06) {
+      this.drawClosedPlayerMouth();
+      return;
+    }
+
+    const directionAngle = DIRECTION_ANGLE_BY_DIRECTION[this.player.lastFacing];
+    const center = { x: 0, y: -2 };
+    const radius = 20;
+    const halfAngle = 0.16 + openAmount * 0.76;
+    const upperAngle = directionAngle - halfAngle;
+    const lowerAngle = directionAngle + halfAngle;
+    const front = { x: Math.cos(directionAngle), y: Math.sin(directionAngle) };
+    const tongue = {
+      x: center.x + front.x * (7.5 + openAmount * 3),
+      y: center.y + front.y * (7.5 + openAmount * 3)
+    };
+
+    mouth.fillStyle(0x070711, 0.97);
+    mouth.beginPath();
+    mouth.moveTo(center.x, center.y);
+    mouth.arc(
+      center.x,
+      center.y,
       radius,
-      directionAngle - halfAngle,
-      directionAngle + halfAngle,
+      upperAngle,
+      lowerAngle,
       false
     );
-    this.player.mouth.closePath();
-    this.player.mouth.fillPath();
+    mouth.closePath();
+    mouth.fillPath();
 
-    this.player.mouth.lineStyle(2, 0xf9a8d4, 0.75);
-    this.player.mouth.beginPath();
-    this.player.mouth.moveTo(0, -2);
-    this.player.mouth.arc(
-      0,
-      -2,
+    mouth.fillStyle(0xfb7185, 0.84);
+    mouth.fillEllipse(tongue.x, tongue.y + 1.2, 7 + openAmount * 4, 3 + openAmount * 2.6);
+
+    mouth.fillStyle(0xf8fafc, 0.98);
+    this.drawPlayerTooth(upperAngle, 12.6, 2.4 + openAmount * 1.4);
+    this.drawPlayerTooth(lowerAngle, 12.6, 2.4 + openAmount * 1.4);
+
+    mouth.lineStyle(3, 0xf472b6, 0.9);
+    mouth.beginPath();
+    mouth.moveTo(center.x, center.y);
+    mouth.arc(
+      center.x,
+      center.y,
       radius,
-      directionAngle - halfAngle,
-      directionAngle + halfAngle,
+      upperAngle,
+      lowerAngle,
       false
     );
-    this.player.mouth.closePath();
-    this.player.mouth.strokePath();
+    mouth.closePath();
+    mouth.strokePath();
+
+    mouth.lineStyle(1.2, 0xffffff, 0.58);
+    mouth.lineBetween(
+      center.x + front.x * 5,
+      center.y + front.y * 5 - 1,
+      center.x + front.x * 13,
+      center.y + front.y * 13 - 1
+    );
+  }
+
+  private drawClosedPlayerMouth(): void {
+    const directionAngle = DIRECTION_ANGLE_BY_DIRECTION[this.player.lastFacing];
+    const center = { x: 0, y: -2 };
+    const front = { x: Math.cos(directionAngle), y: Math.sin(directionAngle) };
+    const side = { x: -front.y, y: front.x };
+    const lipCenter = {
+      x: center.x + front.x * 8,
+      y: center.y + front.y * 8
+    };
+    const lipHalf = 3.8;
+
+    this.player.mouth.lineStyle(2, 0xf472b6, 0.75);
+    this.player.mouth.lineBetween(
+      lipCenter.x - side.x * lipHalf,
+      lipCenter.y - side.y * lipHalf,
+      lipCenter.x + side.x * lipHalf,
+      lipCenter.y + side.y * lipHalf
+    );
+    this.player.mouth.fillStyle(0xffffff, 0.46);
+    this.player.mouth.fillEllipse(
+      lipCenter.x + front.x * 1.5,
+      lipCenter.y + front.y * 1.5 - 0.6,
+      3.4,
+      1.5
+    );
+  }
+
+  private drawPlayerTooth(edgeAngle: number, distance: number, length: number): void {
+    const center = { x: 0, y: -2 };
+    const edge = { x: Math.cos(edgeAngle), y: Math.sin(edgeAngle) };
+    const side = { x: -edge.y, y: edge.x };
+    const base = {
+      x: center.x + edge.x * distance,
+      y: center.y + edge.y * distance
+    };
+    const width = 1.8;
+    const tip = {
+      x: base.x - edge.x * length,
+      y: base.y - edge.y * length
+    };
+
+    this.player.mouth.fillTriangle(
+      base.x - side.x * width,
+      base.y - side.y * width,
+      base.x + side.x * width,
+      base.y + side.y * width,
+      tip.x,
+      tip.y
+    );
   }
 
   private consumePickup(): void {
@@ -939,7 +1151,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.reverseGhosts();
     this.cameras.main.flash(180, 255, 0, 210);
     this.cameras.main.shake(160, 0.004);
-    this.hud.message.setText("BECCA RAGE");
+    this.hud.message.setText("BECCA RAGE!!!");
     this.showBrazyRageSplash();
   }
 
@@ -955,7 +1167,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private showBeccaRageTextFlash(): void {
     const text = this.add
-      .text(480, 118, "BECCA RAGE", {
+      .text(480, 118, "BECCA RAGE!!!", {
         fontFamily: "Inter, Arial, sans-serif",
         fontSize: "66px",
         fontStyle: "900",
@@ -1007,7 +1219,7 @@ export class PacBeccaScene extends Phaser.Scene {
       .setStrokeStyle(5, 0xfacc15, 0.92);
 
     const title = this.add
-      .text(480, 106, "BECCA RAGE", {
+      .text(480, 106, "BECCA RAGE!!!", {
         fontFamily: "Inter, Arial, sans-serif",
         fontSize: "66px",
         fontStyle: "900",
@@ -1100,16 +1312,22 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   private checkCollisions(): void {
-    const playerBounds = this.player.container.getBounds();
+    const playerCenter = {
+      x: this.player.container.x,
+      y: this.player.container.y
+    };
     this.ghosts.forEach((ghost) => {
-      const ghostBounds = ghost.container.getBounds();
-      const distance = Phaser.Math.Distance.Between(
-        playerBounds.centerX,
-        playerBounds.centerY,
-        ghostBounds.centerX,
-        ghostBounds.centerY
-      );
-      if (distance > 16 || ghost.mood === "eaten") {
+      if (ghost.mood === "eaten") {
+        return;
+      }
+
+      const ghostCenter = {
+        x: ghost.container.x,
+        y: ghost.container.y
+      };
+      const dx = playerCenter.x - ghostCenter.x;
+      const dy = playerCenter.y - ghostCenter.y;
+      if (dx * dx + dy * dy > COLLISION_RADIUS_SQUARED) {
         return;
       }
 
@@ -1119,7 +1337,7 @@ export class PacBeccaScene extends Phaser.Scene {
         return;
       }
 
-      if (this.isRearGhostContact(playerBounds, ghostBounds, ghost)) {
+      if (this.isRearGhostContact(playerCenter, ghostCenter, ghost)) {
         this.flashPendingPowerHitRage();
         this.eatGhost(ghost, "rear");
         return;
@@ -1137,19 +1355,13 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   private isRearGhostContact(
-    playerBounds: Phaser.Geom.Rectangle,
-    ghostBounds: Phaser.Geom.Rectangle,
+    playerCenter: GridPoint,
+    ghostCenter: GridPoint,
     ghost: GhostEntity
   ): boolean {
     return isRearContact({
-      attacker: {
-        x: playerBounds.centerX,
-        y: playerBounds.centerY
-      },
-      target: {
-        x: ghostBounds.centerX,
-        y: ghostBounds.centerY
-      },
+      attacker: playerCenter,
+      target: ghostCenter,
       targetFacing: ghost.lastFacing
     });
   }
@@ -1160,11 +1372,34 @@ export class PacBeccaScene extends Phaser.Scene {
     ghost.mood = "eaten";
     ghost.direction = "none";
     ghost.progress = 1;
+    this.ghostEatsThisRound += 1;
+    this.eatenGhostIds.add(ghost.config.id);
+    const eatenCount = Math.min(this.eatenGhostIds.size, this.ghosts.length);
     this.hud.message.setText(
       hitType === "rear"
-        ? `${ghost.config.name} got rear-chomped.`
-        : `${ghost.config.name} got sent home.`
+        ? `${ghost.config.name} got rear-chomped. Unique sweep ${eatenCount}/${this.ghosts.length}. Eats ${this.ghostEatsThisRound}.`
+        : `${ghost.config.name} got sent home. Unique sweep ${eatenCount}/${this.ghosts.length}. Eats ${this.ghostEatsThisRound}.`
     );
+    this.checkGhostSweepWin();
+  }
+
+  private checkGhostSweepWin(): void {
+    if (this.levelAdvanceEvent || this.ended) {
+      return;
+    }
+
+    if (this.ghosts.length === 0) {
+      return;
+    }
+
+    if (
+      hasCompletedGhostSweep(
+        this.eatenGhostIds,
+        this.ghosts.map((ghost) => ghost.config.id)
+      )
+    ) {
+      this.advanceLevel("Ghost sweep. Round won!");
+    }
   }
 
   private loseLife(): void {
@@ -1194,8 +1429,17 @@ export class PacBeccaScene extends Phaser.Scene {
     this.player.progress = 1;
     this.player.lastFacing = "right";
     this.player.chompTimeMs = 0;
+    this.player.lastFrameIndex = 5;
     this.player.sprite.setFrame(5);
+    this.player.faceDetailKey = "";
+    this.player.mouthKey = "";
+    this.player.hypnoRenderKey = "";
+    this.player.faceDetails.clear();
+    this.player.faceDetails.setPosition(0, -2);
+    this.player.faceDetails.setAngle(0);
     this.player.mouth.clear();
+    this.player.mouth.setPosition(0, 0);
+    this.player.mouth.setAngle(0);
     this.player.sprite.clearTint();
     this.player.container.setScale(1);
     this.placeEntity(this.player, this.player.tile);
@@ -1209,6 +1453,8 @@ export class PacBeccaScene extends Phaser.Scene {
       ghost.progress = 1;
       ghost.released = false;
       ghost.mood = "normal";
+      ghost.renderFacing = "";
+      ghost.renderStyleKey = "";
       this.placeEntity(ghost, start);
       this.updateGhostAppearance(ghost);
     });
@@ -1216,15 +1462,19 @@ export class PacBeccaScene extends Phaser.Scene {
     this.hypnoRainbowUntilMs = 0;
   }
 
-  private advanceLevel(): void {
+  private advanceLevel(message = "Level clear."): void {
+    if (this.levelAdvanceEvent || this.ended) {
+      return;
+    }
+
     this.score += 500 + this.level.id * 50;
+    this.pausedAfterHit = true;
     if (this.levelIndex >= LEVELS.length - 1) {
       this.endGame(true);
       return;
     }
 
-    this.hud.message.setText("Level clear.");
-    this.levelAdvanceEvent?.remove(false);
+    this.hud.message.setText(message);
     this.levelAdvanceEvent = this.time.delayedCall(900, () => {
       this.levelAdvanceEvent = undefined;
       this.startLevel(this.levelIndex + 1);
@@ -1311,6 +1561,18 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private updateGhostAppearance(ghost: GhostEntity): void {
     this.updateGhostFacing(ghost);
+    const styleKey =
+      ghost.mood === "eaten"
+        ? "eaten"
+        : this.isGhostVulnerable(ghost)
+          ? "vulnerable"
+          : "normal";
+
+    if (styleKey === ghost.renderStyleKey) {
+      return;
+    }
+
+    ghost.renderStyleKey = styleKey;
     const {
       body,
       shine,
@@ -1323,7 +1585,7 @@ export class PacBeccaScene extends Phaser.Scene {
       nameLabel
     } = ghost.face;
 
-    if (ghost.mood === "eaten") {
+    if (styleKey === "eaten") {
       body.setFillStyle(0x111827, 0.25);
       shine.setFillStyle(0xf8fafc, 0.95);
       leftEye.setAlpha(1);
@@ -1339,7 +1601,7 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
-    if (this.isGhostVulnerable(ghost)) {
+    if (styleKey === "vulnerable") {
       body.setFillStyle(0x6d28d9, 1);
       shine.setFillStyle(0xc4b5fd, 0.95);
       leftEye.setAlpha(1);
@@ -1375,12 +1637,12 @@ export class PacBeccaScene extends Phaser.Scene {
     }
 
     const facing = ghost.lastFacing;
-    const vector = {
-      up: { x: 0, y: -1, marker: "^" },
-      down: { x: 0, y: 1, marker: "v" },
-      left: { x: -1, y: 0, marker: "<" },
-      right: { x: 1, y: 0, marker: ">" }
-    }[facing];
+    if (facing === ghost.renderFacing) {
+      return;
+    }
+
+    ghost.renderFacing = facing;
+    const vector = GHOST_FACING_VECTORS[facing];
 
     const { leftEye, rightEye, leftPupil, rightPupil, facingMarker } = ghost.face;
     const eyeYOffset = vector.y * 2 - 1;
@@ -1394,23 +1656,38 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private updateHud(): void {
     const level = this.level;
-    this.hud.score.setText(`Score ${this.score.toLocaleString()}`);
-    this.hud.level.setText(`Level ${level.id}/10  ${level.title}`);
-    this.hud.lives.setText(`Lives ${"●".repeat(this.lives)}${"○".repeat(Math.max(0, 3 - this.lives))}`);
+    this.setHudText("score", `Score ${this.score.toLocaleString()}`);
+    this.setHudText("level", `Level ${level.id}/10  ${level.title}`);
+    this.setHudText("lives", `Lives ${"●".repeat(this.lives)}${"○".repeat(Math.max(0, 3 - this.lives))}`);
     const mode = this.isHypnoRainbowActive()
       ? "hypno rainbow"
       : this.time.now < this.frightenedUntilMs
         ? "vulnerable"
         : this.globalMode;
-    this.hud.mode.setText(`Ghost mode ${mode}`);
-    this.hud.meterBar.width = 220 * (this.burstMeter / BURST_METER_MAX);
-    this.hud.burst.setText(
+    this.setHudText("mode", `Ghost mode ${mode}`);
+
+    const meterWidth = Math.round(220 * (this.burstMeter / BURST_METER_MAX));
+    if (meterWidth !== this.hudCache.meterWidth) {
+      this.hudCache.meterWidth = meterWidth;
+      this.hud.meterBar.width = meterWidth;
+    }
+
+    this.setHudText(
+      "burst",
       this.burstMeter >= BURST_METER_MAX ? "Becca Burst ready" : "Becca Burst"
     );
-    this.hud.ghostList.setText(
-      this.ghosts
-        .map((ghost) => `${ghost.config.name}: ${ghost.config.personality}`)
-        .join("\n")
-    );
+    this.setHudText("ghostList", this.ghostListText);
+  }
+
+  private setHudText(
+    key: Exclude<keyof HudRenderCache, "meterWidth">,
+    value: string
+  ): void {
+    if (this.hudCache[key] === value) {
+      return;
+    }
+
+    this.hudCache[key] = value;
+    this.hud[key].setText(value);
   }
 }

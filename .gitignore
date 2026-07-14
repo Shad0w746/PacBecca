@@ -1,8 +1,14 @@
 node_modules/
 dist/
+dist-squarespace/
 .vite/
 coverage/
 tmp/
+output/
+.wrangler/
 *.log
+.env
+.env.*
+!.env.example
 .DS_Store
 Thumbs.db

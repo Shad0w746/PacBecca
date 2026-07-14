@@ -13,15 +13,36 @@
     <div id="version-badge" class="version-badge" aria-label="Game version"></div>
     <main class="app-shell" aria-label="PacBecca game">
       <section class="game-frame">
-        <button
-          id="info-toggle"
-          class="info-toggle"
-          type="button"
-          aria-controls="info-overlay"
-          aria-expanded="false"
-        >
-          Rules and leaderboard
-        </button>
+        <div class="top-controls" aria-label="Game controls">
+          <button
+            id="info-toggle"
+            class="control-button"
+            type="button"
+            aria-controls="info-overlay"
+            aria-expanded="false"
+          >
+            Rules
+          </button>
+          <button
+            id="leaderboard-toggle"
+            class="control-button"
+            type="button"
+            aria-controls="info-overlay"
+            aria-expanded="false"
+          >
+            Leaderboard
+          </button>
+          <button
+            id="pause-toggle"
+            class="control-button pause-button"
+            type="button"
+            aria-pressed="false"
+            disabled
+          >
+            Pause
+          </button>
+        </div>
+        <div class="game-title" aria-label="Game title">PacBecca</div>
         <button id="reset-game" class="reset-button" type="button">
           Reset
         </button>
@@ -63,9 +84,10 @@
               <li>After one yellow can, the first bad ghost hit triggers a 5-second hypno-rainbow save.</li>
               <li>Space uses Becca Burst when the meter is full.</li>
               <li>Clear every pickup to advance.</li>
+              <li>Eat each ghost at least once in a round to win that round immediately.</li>
             </ul>
           </section>
-          <section class="menu-section" aria-labelledby="leaderboard-title">
+          <section id="leaderboard-section" class="menu-section" aria-labelledby="leaderboard-title">
             <h2 id="leaderboard-title">Top 10</h2>
             <ol id="leaderboard-list" class="leaderboard-list"></ol>
             <form id="leaderboard-form" class="leaderboard-form">
@@ -80,6 +102,7 @@
                   disabled
                 />
                 <button id="leaderboard-submit" type="submit" disabled>Submit</button>
+                <button id="leaderboard-restart" type="button" disabled>Skip & Restart</button>
               </div>
               <p id="leaderboard-status" class="leaderboard-status">
                 Finish a run to submit a score.

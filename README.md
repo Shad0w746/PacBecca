@@ -26,11 +26,12 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 ## Current Game Rules
 
 - Clear all pellets, yellow power cans, and hearts to advance.
+- Eat each ghost at least once in a round to win that round immediately.
 - Yellow power cans with blue writing make ghosts vulnerable for a short time.
 - After collecting at least one yellow can, the first bad ghost hit triggers a 5-second hypno-rainbow save instead of losing a life.
 - Hearts and pellets fill the Becca Burst meter.
 - Becca Burst briefly makes every active ghost vulnerable.
-- Finish a run to submit your name to the local top-10 leaderboard.
+- Finish a run to submit your name to the top-10 leaderboard in `public/leaderboard.txt`.
 - Open the collapsible rules menu to review the objective, rules, and leaderboard.
 - The five ghosts have distinct target-tile behaviors:
   - Frosty: direct pursuer.
@@ -43,9 +44,43 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 
 - `src/game/`: game loop, levels, maze parsing, ghost targeting, and pathfinding.
 - `src/ui/`: browser UI for the local leaderboard and page controls.
+- `public/leaderboard.txt`: simple tab-separated top-10 leaderboard file.
 - `public/assets/`: replaceable game assets.
 - `docs/`: research, design notes, IP boundaries, and test/next-step guide.
 - `.github/workflows/ci.yml`: basic CI for tests and production build.
+
+## Leaderboard File
+
+The game reads `public/leaderboard.txt` to show the top 10 scores. While running with `pnpm dev`, score submissions post to `/api/leaderboard`, and the Vite dev server writes the updated top 10 back to that txt file.
+
+Static hosts can read the txt file, but they cannot write back to the git repo without a server endpoint.
+
+## Global Leaderboard
+
+The repo includes a Cloudflare Worker in `workers/leaderboard` for a shared Squarespace leaderboard. Deploy it with Cloudflare KV, then build PacBecca with:
+
+```powershell
+$env:VITE_LEADERBOARD_API_URL = "https://pacbecca-leaderboard.danwalkerworks.workers.dev/api/leaderboard"
+pnpm build:squarespace
+```
+
+See [docs/GLOBAL_LEADERBOARD.md](docs/GLOBAL_LEADERBOARD.md) for the full deployment runbook.
+
+## GitHub Hosting
+
+The app is ready to run from GitHub Pages as a static Vite build while continuing to use the Cloudflare Worker for the global leaderboard.
+
+See [docs/GITHUB_MIGRATION.md](docs/GITHUB_MIGRATION.md) for the migration checklist.
+
+The Pages workflow builds with:
+
+```powershell
+$env:VITE_LEADERBOARD_API_URL = "https://pacbecca-leaderboard.danwalkerworks.workers.dev/api/leaderboard"
+$env:VITE_BASE_PATH = "/PacBecca/"
+pnpm build
+```
+
+For Squarespace embed output, set `PACBECCA_SQUARESPACE_OUTPUT_DIR` if you want the generated code block written outside this repo.
 
 ## Useful Commands
 
@@ -53,4 +88,5 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 pnpm test
 pnpm build
 pnpm check
+pnpm leaderboard:deploy
 ```

@@ -2,7 +2,12 @@
 
 ## 0.2.0 - 2026-07-06
 
+- Added a deployable Cloudflare Worker scaffold for a global top-10 leaderboard backed by Cloudflare KV.
+- Added `VITE_LEADERBOARD_API_URL` / `window.PACBECCA_LEADERBOARD_API_URL` support so the Squarespace build can use the hosted leaderboard API while local dev keeps the txt-file fallback.
 - Added a start screen button so the game waits for user input after page load or refresh.
+- Added `public/leaderboard.txt` as the leaderboard source and a local `/api/leaderboard` dev endpoint that writes submitted top-10 scores back to the txt file.
+- Hardened leaderboard name entry so WASD keystrokes type into the name field instead of leaking into Phaser movement handling.
+- Added a ghost-sweep rule: eating all five ghosts in a round immediately wins the round.
 - Added a persistent lower-right reset button that can restart PacBecca from gameplay, game over, or the leaderboard screen.
 - Added a flashing highlighted "Enter Restarts" prompt when a game ends.
 - Added a browser-local top-10 leaderboard with name submission after a run ends.
