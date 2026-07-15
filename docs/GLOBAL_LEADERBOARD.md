@@ -4,7 +4,7 @@ PacBecca can use a hosted Cloudflare Worker for a shared top-10 leaderboard on S
 
 ## Architecture
 
-- Squarespace hosts the static PacBecca embed.
+- Squarespace hosts a public PacBecca page that embeds the GitHub Pages build.
 - The game reads `VITE_LEADERBOARD_API_URL` at build time, or `window.PACBECCA_LEADERBOARD_API_URL` at runtime.
 - The Cloudflare Worker exposes `GET /api/leaderboard` and `POST /api/leaderboard`.
 - Cloudflare KV stores the shared top 10 as JSON.
@@ -36,16 +36,21 @@ https://pacbecca-leaderboard.danwalkerworks.workers.dev
 
 The PacBecca API URL is that value plus `/api/leaderboard`.
 
-## Build PacBecca For Squarespace
+## Connect PacBecca To Squarespace
 
 ```powershell
-$env:VITE_LEADERBOARD_API_URL = "https://pacbecca-leaderboard.danwalkerworks.workers.dev/api/leaderboard"
-pnpm build:squarespace
+pnpm build:squarespace:embed
 ```
 
-Then regenerate and publish the Squarespace code block.
+Then publish the regenerated Squarespace code block.
 
-The public Squarespace game page should be named `PacBecca`, use the slug `/pacbecca`, and have page password protection turned off. Paste `output/pacbecca-page-code-block.html` into that page's Code block, then update the Games & Stuff Code block so its PacBecca link points to `/pacbecca`.
+The public Squarespace game page should be named `PacBecca`, use the slug `/pacbecca`, and have public access enabled. Paste `output/pacbecca-page-code-block.html` into that page's Code block, then update the Games & Stuff Code block so its PacBecca link points to `/pacbecca`.
+
+The old restricted PacBecca page should be deleted or unpublished. The Squarespace page iframe points to:
+
+```text
+https://shad0w746.github.io/PacBecca/
+```
 
 ## Test
 

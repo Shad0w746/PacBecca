@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,89 +7,25 @@ const repoRoot = resolve(scriptDir, "..");
 const outputDir = process.env.PACBECCA_SQUARESPACE_OUTPUT_DIR
   ? resolve(process.env.PACBECCA_SQUARESPACE_OUTPUT_DIR)
   : resolve(repoRoot, "output");
-const optimizedAssetDir = join(outputDir, "pacbecca-optimized-assets");
-const distDir = join(repoRoot, "dist-squarespace");
-const leaderboardApiUrl = "https://pacbecca-leaderboard.danwalkerworks.workers.dev/api/leaderboard";
+const githubPagesUrl =
+  process.env.PACBECCA_GITHUB_PAGES_URL ?? "https://shad0w746.github.io/PacBecca/";
 const publicPageName = "PacBecca";
 const publicPageSlug = "/pacbecca";
 const codeBlockFileName = "pacbecca-page-code-block.html";
 const alternateCodeBlockFileName = "pacbecca-code-block.html";
 const setupGuideFileName = "pacbecca-squarespace-setup.md";
 
-function dataUrl(file, mimeType) {
-  return `data:${mimeType};base64,${readFileSync(file).toString("base64")}`;
+function htmlAttribute(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-function jsString(value) {
-  return JSON.stringify(value);
-}
-
-function escapeInlineScript(script) {
-  return script.replace(/<\/script/gi, "<\\/script");
-}
-
-function readBuiltAppHtml() {
-  let html = readFileSync(join(distDir, "index.html"), "utf8");
-  const cssHref = html.match(/<link rel="stylesheet" crossorigin href="([^"]+)">/)?.[1];
-  const jsSrc = html.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/)?.[1];
-
-  if (!cssHref || !jsSrc) {
-    throw new Error("Could not find Vite CSS/JS references in dist-squarespace/index.html");
-  }
-
-  const css = readFileSync(join(distDir, cssHref.replace(/^\//, "")), "utf8");
-  let js = readFileSync(join(distDir, jsSrc.replace(/^\//, "")), "utf8");
-
-  const replacements = new Map([
-    ["/assets/becca-head.png", dataUrl(join(optimizedAssetDir, "becca-head.webp"), "image/webp")],
-    [
-      "/assets/becca-head-sheet.png",
-      dataUrl(join(optimizedAssetDir, "becca-head-sheet.webp"), "image/webp")
-    ],
-    [
-      "/assets/rage/brazy-becca-rage-1.jpg",
-      dataUrl(join(optimizedAssetDir, "rage", "brazy-becca-rage-1.jpg"), "image/jpeg")
-    ],
-    [
-      "/assets/rage/brazy-becca-rage-2.jpg",
-      dataUrl(join(optimizedAssetDir, "rage", "brazy-becca-rage-2.jpg"), "image/jpeg")
-    ],
-    [
-      "/assets/rage/brazy-becca-rage-3.jpg",
-      dataUrl(join(optimizedAssetDir, "rage", "brazy-becca-rage-3.jpg"), "image/jpeg")
-    ],
-    [
-      "/assets/rage/brazy-becca-rage-4.jpg",
-      dataUrl(join(optimizedAssetDir, "rage", "brazy-becca-rage-4.jpg"), "image/jpeg")
-    ],
-    [
-      "/assets/rage/brazy-becca-rage-5.jpg",
-      dataUrl(join(optimizedAssetDir, "rage", "brazy-becca-rage-5.jpg"), "image/jpeg")
-    ]
-  ]);
-
-  for (const [path, url] of replacements) {
-    js = js.split(jsString(path)).join(jsString(url));
-  }
-
-  js = escapeInlineScript(js);
-
-  html = html
-    .replace(/<link rel="stylesheet" crossorigin href="[^"]+">/, () => `<style>${css}</style>`)
-    .replace(
-      /<script type="module" crossorigin src="[^"]+"><\/script>/,
-      () =>
-        `<script>window.PACBECCA_LEADERBOARD_API_URL = ${jsString(leaderboardApiUrl)};</script>\n    <script type="module">${js}</script>`
-    );
-
-  return html;
-}
-
-function buildCodeBlock(appHtml) {
-  const encoded = Buffer.from(appHtml, "utf8").toString("base64");
-
+function buildCodeBlock() {
   return `<section class="dw-pacbecca-game" aria-label="PacBecca game">
-  <iframe id="dw-pacbecca-frame" class="dw-pacbecca-frame" title="PacBecca game" loading="eager" allow="fullscreen"></iframe>
+  <iframe id="dw-pacbecca-frame" class="dw-pacbecca-frame" title="PacBecca game" src="${htmlAttribute(githubPagesUrl)}" loading="eager" allow="fullscreen"></iframe>
 </section>
 <style>
 .dw-pacbecca-game { --dw-pacbecca-header-offset: 0px; position: relative; width: 100%; min-height: calc(100svh - var(--dw-pacbecca-header-offset)); margin: 0; overflow: hidden; background: #101018; color: #f8fafc; padding-top: var(--dw-pacbecca-header-offset); }
@@ -155,9 +91,6 @@ footer, [role="contentinfo"], .Footer, .site-footer, .footer, #footer, [data-sec
     setTimeout(fitFrame, 250);
   });
   fitFrame();
-  const encoded = '${encoded}';
-  const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
-  frame.srcdoc = new TextDecoder().decode(bytes);
 })();
 <\/script>
 `;
@@ -166,29 +99,25 @@ footer, [role="contentinfo"], .Footer, .site-footer, .footer, #footer, [data-sec
 function buildSetupGuide() {
   return `# ${publicPageName} Squarespace Setup
 
-1. Open the existing Squarespace page that currently hosts the password page for PacBecca.
-2. In Page Settings, turn off page password protection and clear any saved password.
-3. Rename the page to \`${publicPageName}\`.
-4. Set the page URL slug to \`${publicPageSlug}\`.
+1. Delete or unpublish the old restricted PacBecca page.
+2. Create or keep a public page named \`${publicPageName}\`.
+3. Set the page URL slug to \`${publicPageSlug}\`.
+4. Confirm page access is public.
 5. Add or replace the page Code block with \`output/${codeBlockFileName}\`.
 6. Replace the Games & Stuff page Code block with \`output/games-stuff-code-block-simple.html\`.
 
-The Games & Stuff link should point directly to \`${publicPageSlug}\`. PacBecca is now configured as a public Squarespace page, so the old \`/brazybatellion-exclusive\` password page can be unpublished or removed after the public page works.
+The public Squarespace page embeds the GitHub Pages build at ${githubPagesUrl}. The Games & Stuff link should point directly to \`${publicPageSlug}\`. The old restricted page should not remain published or linked.
 `;
 }
 
-const appHtml = readBuiltAppHtml();
-const codeBlock = buildCodeBlock(appHtml);
+const codeBlock = buildCodeBlock();
 const setupGuide = buildSetupGuide();
 
 mkdirSync(outputDir, { recursive: true });
 
 writeFileSync(join(outputDir, codeBlockFileName), codeBlock, "utf8");
 writeFileSync(join(outputDir, alternateCodeBlockFileName), codeBlock, "utf8");
-writeFileSync(join(outputDir, "brazybatellion-exclusive-page-code-block.html"), codeBlock, "utf8");
-writeFileSync(join(outputDir, "brazybatellion-exclusive-pacbecca-code-block.html"), codeBlock, "utf8");
 writeFileSync(join(outputDir, setupGuideFileName), setupGuide, "utf8");
-writeFileSync(join(outputDir, "brazybatellion-exclusive-squarespace-setup.md"), setupGuide, "utf8");
 writeFileSync(
   join(outputDir, "pacbecca-embed-test.html"),
   `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>PacBecca Squarespace Embed Test</title>\n</head>\n<body>\n${codeBlock}\n</body>\n</html>\n`,
@@ -199,7 +128,7 @@ console.log(
   JSON.stringify(
     {
       codeBlockBytes: Buffer.byteLength(codeBlock, "utf8"),
-      iframeHtmlBytes: Buffer.byteLength(appHtml, "utf8"),
+      githubPagesUrl,
       output: join(outputDir, codeBlockFileName),
       setup: join(outputDir, setupGuideFileName),
       slug: publicPageSlug

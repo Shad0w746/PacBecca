@@ -12,7 +12,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm test && pnpm build",
+    "version:check": "node scripts/check-version.mjs",
+    "check": "pnpm version:check && pnpm test && pnpm build",
     "leaderboard:dev": "pnpm dlx wrangler dev --config workers/leaderboard/wrangler.toml",
     "leaderboard:deploy": "pnpm dlx wrangler deploy --config workers/leaderboard/wrangler.toml"
   },

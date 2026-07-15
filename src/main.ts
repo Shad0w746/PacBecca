@@ -37,8 +37,7 @@ const restartPrompt = document.querySelector<HTMLElement>("#restart-prompt");
 const root = document.documentElement;
 
 setupLeaderboard();
-const displayVersion = packageJson.version.replace(/\.0$/, "");
-document.querySelector("#version-badge")!.textContent = `v${displayVersion}`;
+document.querySelector("#version-badge")!.textContent = `v${packageJson.version}`;
 
 let viewportRefreshFrame = 0;
 let lastViewportSize = "";

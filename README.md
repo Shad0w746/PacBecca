@@ -80,11 +80,24 @@ $env:VITE_BASE_PATH = "/PacBecca/"
 pnpm build
 ```
 
-For Squarespace embed output, set `PACBECCA_SQUARESPACE_OUTPUT_DIR` if you want the generated code block written outside this repo.
+For Squarespace page-code output, run `pnpm build:squarespace:embed`. Set `PACBECCA_SQUARESPACE_OUTPUT_DIR` if you want the generated code block written outside this repo.
+
+## Release Versioning
+
+PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.0`.
+
+Before every production code push to `main`, update `package.json`, `VERSION`, and `CHANGELOG.md`, then run:
+
+```powershell
+pnpm version:check
+```
+
+See [docs/RELEASE_VERSIONING.md](docs/RELEASE_VERSIONING.md).
 
 ## Useful Commands
 
 ```powershell
+pnpm version:check
 pnpm test
 pnpm build
 pnpm check

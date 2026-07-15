@@ -74,4 +74,4 @@ $env:VITE_LEADERBOARD_API_URL="https://pacbecca-leaderboard.danwalkerworks.worke
 pnpm build
 ```
 
-For Squarespace embed generation, run `pnpm build:squarespace` first. The embed script writes to the repo-local ignored `output/` folder by default, or to `PACBECCA_SQUARESPACE_OUTPUT_DIR` when that environment variable is set.
+For Squarespace page-code generation, run `pnpm build:squarespace:embed`. The generator writes a public `/pacbecca` code block that embeds the GitHub Pages build. It writes to the repo-local ignored `output/` folder by default, or to `PACBECCA_SQUARESPACE_OUTPUT_DIR` when that environment variable is set.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 - 2026-07-15
+
+- Standardized PacBecca project versioning on `MAJOR.MINOR.PATCH` format.
+- Updated the top-right game badge to display the full project version, starting with `v0.5.0`.
+- Added a version consistency check for production pushes and GitHub Pages deploys.
+- Switched the Squarespace public page handoff to embed the GitHub Pages build.
+- Removed generation of legacy password-page handoff files.
+
 ## 0.2.0 - 2026-07-06
 
 - Added a deployable Cloudflare Worker scaffold for a global top-10 leaderboard backed by Cloudflare KV.

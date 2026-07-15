@@ -55,7 +55,7 @@ Publish the regenerated Squarespace embed, submit a score from the live page, th
 11. Close the leaderboard, press the lower-right `Reset` button, and confirm the game restarts at level 1 with score 0 and 3 lives.
 12. During active play, press the lower-right `Reset` button and confirm the same clean restart.
 13. Collapse and expand the side rules menu.
-14. Confirm the top-right version badge reads `v0.2.0`.
+14. Confirm the top-right version badge reads the full project version, such as `v0.5.0`.
 15. Clear the level and confirm the next level title appears.
 16. Confirm game over or victory shows a flashing highlighted `Enter Restarts` prompt.
 17. Confirm Enter restarts after game over or victory.
