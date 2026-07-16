@@ -59,6 +59,8 @@ Publish the regenerated Squarespace embed, submit a score from the live page, th
 15. Clear the level and confirm the next level title appears.
 16. Confirm game over or victory shows a flashing highlighted `Enter Restarts` prompt.
 17. Confirm Enter restarts after game over or victory.
+18. Collect a yellow can and confirm power-up mode has an obvious playful intro and looping sparkle sound.
+19. Trigger Becca Rage and confirm it has a distinct siren/drop sound separate from regular power-up mode.
 
 ## Next Build Pass
 

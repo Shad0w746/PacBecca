@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.6 - 2026-07-16
+
+- Made power-up mode louder and more playful with a brighter arcade intro and bouncier sparkle loop.
+- Added a dedicated Becca Rage mode sound path with a bigger siren/drop cue and temporary rage loop.
+- Tuned the original background music toward a stronger ancient-temple adventure feel without copying Zelda music.
+
 ## 0.5.5 - 2026-07-16
 
 - Added a playful one-life-lost sound that is separate from the final game-over cue.

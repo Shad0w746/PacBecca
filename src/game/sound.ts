@@ -61,6 +61,26 @@ const BACKGROUND_BELL_NOTES = new Map<number, number>([
   [28, 783.99]
 ]);
 const BACKGROUND_SHIMMER_STEPS = new Set([6, 14, 22, 30]);
+const POWER_MODE_SPARKLE_NOTES = [
+  987.77,
+  1318.51,
+  1567.98,
+  1975.53,
+  1760,
+  1567.98,
+  1318.51,
+  1174.66
+] as const;
+const RAGE_MODE_SIREN_NOTES = [
+  196,
+  246.94,
+  293.66,
+  392,
+  493.88,
+  392,
+  293.66,
+  246.94
+] as const;
 
 const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   ui: {
@@ -95,11 +115,13 @@ const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   },
   powerModeStart: {
     tones: [
-      { durationMs: 95, frequency: 587.33, gain: 0.065, type: "triangle" },
-      { offsetMs: 72, durationMs: 95, frequency: 783.99, gain: 0.065, type: "triangle" },
-      { offsetMs: 144, durationMs: 110, frequency: 987.77, gain: 0.065, type: "triangle" },
-      { offsetMs: 224, durationMs: 170, frequency: 1567.98, endFrequency: 1174.66, gain: 0.055, type: "sine" }
-    ]
+      { durationMs: 95, frequency: 523.25, endFrequency: 783.99, gain: 0.088, type: "square" },
+      { offsetMs: 74, durationMs: 95, frequency: 659.25, endFrequency: 987.77, gain: 0.084, type: "triangle" },
+      { offsetMs: 148, durationMs: 115, frequency: 783.99, endFrequency: 1318.51, gain: 0.08, type: "square" },
+      { offsetMs: 228, durationMs: 155, frequency: 1046.5, endFrequency: 2093, gain: 0.066, type: "sine" },
+      { offsetMs: 330, durationMs: 185, frequency: 1567.98, endFrequency: 2349.32, gain: 0.052, type: "triangle" }
+    ],
+    noise: [{ offsetMs: 40, durationMs: 210, gain: 0.014, filterFrequency: 2600 }]
   },
   heart: {
     tones: [
@@ -145,11 +167,16 @@ const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   },
   rage: {
     tones: [
-      { durationMs: 180, frequency: 233.08, endFrequency: 466.16, gain: 0.12, type: "sawtooth" },
-      { offsetMs: 120, durationMs: 190, frequency: 523.25, endFrequency: 1046.5, gain: 0.1, type: "square" },
-      { offsetMs: 260, durationMs: 190, frequency: 932.33, endFrequency: 466.16, gain: 0.075, type: "triangle" }
+      { durationMs: 210, frequency: 155.56, endFrequency: 311.13, gain: 0.13, type: "sawtooth" },
+      { offsetMs: 95, durationMs: 260, frequency: 233.08, endFrequency: 932.33, gain: 0.11, type: "square" },
+      { offsetMs: 220, durationMs: 190, frequency: 1244.51, endFrequency: 622.25, gain: 0.09, type: "triangle" },
+      { offsetMs: 360, durationMs: 260, frequency: 466.16, endFrequency: 1864.66, gain: 0.075, type: "square" },
+      { offsetMs: 540, durationMs: 360, frequency: 932.33, endFrequency: 233.08, gain: 0.055, type: "sawtooth" }
     ],
-    noise: [{ offsetMs: 40, durationMs: 290, gain: 0.03, filterFrequency: 1800 }]
+    noise: [
+      { offsetMs: 30, durationMs: 360, gain: 0.04, filterFrequency: 1700 },
+      { offsetMs: 430, durationMs: 190, gain: 0.025, filterFrequency: 3200 }
+    ]
   },
   levelClear: {
     tones: [
@@ -255,6 +282,8 @@ export class PacBeccaAudio {
   private powerModeStep = 0;
   private powerModeUntilMs = 0;
   private powerModePausedRemainingMs = 0;
+  private rageModeUntilMs = 0;
+  private rageModePausedRemainingMs = 0;
   private readonly lastPlayedAt = new Map<PacBeccaSoundName, number>();
 
   setEnabled(enabled: boolean): void {
@@ -294,6 +323,7 @@ export class PacBeccaAudio {
 
     if (paused) {
       this.powerModePausedRemainingMs = Math.max(0, this.powerModeUntilMs - performance.now());
+      this.rageModePausedRemainingMs = Math.max(0, this.rageModeUntilMs - performance.now());
       this.clearBackgroundMusicTimer();
       this.clearPowerModeTimer();
       this.clearPowerModeStopTimer();
@@ -307,6 +337,14 @@ export class PacBeccaAudio {
       );
       this.powerModePausedRemainingMs = 0;
       this.schedulePowerModeStop();
+    }
+
+    if (this.rageModePausedRemainingMs > 0) {
+      this.rageModeUntilMs = Math.max(
+        this.rageModeUntilMs,
+        performance.now() + this.rageModePausedRemainingMs
+      );
+      this.rageModePausedRemainingMs = 0;
     }
 
     this.maybeStartBackgroundMusic();
@@ -330,9 +368,21 @@ export class PacBeccaAudio {
     this.schedulePowerModeStop();
   }
 
+  startRageMode(durationMs: number): void {
+    this.powerModeUntilMs = Math.max(this.powerModeUntilMs, performance.now() + durationMs);
+    this.rageModeUntilMs = Math.max(this.rageModeUntilMs, performance.now() + durationMs);
+    this.powerModePausedRemainingMs = 0;
+    this.rageModePausedRemainingMs = 0;
+    this.play("rage");
+    this.maybeStartPowerModeLoop();
+    this.schedulePowerModeStop();
+  }
+
   stopPowerMode(): void {
     this.powerModeUntilMs = 0;
     this.powerModePausedRemainingMs = 0;
+    this.rageModeUntilMs = 0;
+    this.rageModePausedRemainingMs = 0;
     this.clearPowerModeTimer();
     this.clearPowerModeStopTimer();
   }
@@ -410,9 +460,9 @@ export class PacBeccaAudio {
       this.playTone(
         context,
         {
-          durationMs: 680,
+          durationMs: 720,
           frequency: bassFrequency,
-          gain: 0.014,
+          gain: 0.018,
           type: "triangle",
           attackMs: 70
         },
@@ -423,9 +473,9 @@ export class PacBeccaAudio {
         context,
         {
           offsetMs: 28,
-          durationMs: 720,
+          durationMs: 760,
           frequency: bassFrequency * 2,
-          gain: 0.006,
+          gain: 0.0075,
           type: "sine",
           attackMs: 90
         },
@@ -437,9 +487,9 @@ export class PacBeccaAudio {
       this.playTone(
         context,
         {
-          durationMs: 1500,
+          durationMs: 1560,
           frequency: step === 0 ? 220 : 196,
-          gain: 0.006,
+          gain: 0.008,
           type: "sine",
           attackMs: 160
         },
@@ -454,7 +504,7 @@ export class PacBeccaAudio {
         {
           durationMs: 170,
           frequency: bellFrequency,
-          gain: 0.014,
+          gain: 0.019,
           type: "triangle",
           attackMs: 14
         },
@@ -465,9 +515,9 @@ export class PacBeccaAudio {
         context,
         {
           offsetMs: 95,
-          durationMs: 180,
+          durationMs: 210,
           frequency: bellFrequency * 1.5,
-          gain: 0.0045,
+          gain: 0.006,
           type: "sine",
           attackMs: 20
         },
@@ -480,8 +530,8 @@ export class PacBeccaAudio {
         context,
         {
           durationMs: 34,
-          gain: 0.0032,
-          filterFrequency: 1850
+          gain: 0.004,
+          filterFrequency: 2100
         },
         startAt
       );
@@ -528,17 +578,30 @@ export class PacBeccaAudio {
     }
 
     const step = this.powerModeStep % 8;
-    const sparkleNotes = [987.77, 1174.66, 1318.51, 1567.98, 1318.51, 1760, 1567.98, 1174.66];
     const startAt = context.currentTime + 0.01;
+    const rageActive = this.rageModeUntilMs > performance.now();
 
     this.playTone(
       context,
       {
-        durationMs: 72,
-        frequency: sparkleNotes[step],
-        gain: step % 2 === 0 ? 0.025 : 0.019,
-        type: "triangle",
+        durationMs: rageActive ? 92 : 82,
+        frequency: POWER_MODE_SPARKLE_NOTES[step],
+        gain: rageActive ? 0.031 : step % 2 === 0 ? 0.038 : 0.03,
+        type: step % 2 === 0 ? "square" : "triangle",
         attackMs: 4
+      },
+      startAt
+    );
+
+    this.playTone(
+      context,
+      {
+        offsetMs: 42,
+        durationMs: 74,
+        frequency: POWER_MODE_SPARKLE_NOTES[(step + 2) % POWER_MODE_SPARKLE_NOTES.length],
+        gain: rageActive ? 0.014 : 0.019,
+        type: "sine",
+        attackMs: 5
       },
       startAt
     );
@@ -547,14 +610,41 @@ export class PacBeccaAudio {
       this.playTone(
         context,
         {
-          durationMs: 105,
+          durationMs: 116,
           frequency: 493.88,
-          gain: 0.014,
+          gain: rageActive ? 0.017 : 0.024,
           type: "square",
           attackMs: 8
         },
         startAt
       );
+    }
+
+    if (rageActive) {
+      this.playTone(
+        context,
+        {
+          durationMs: 130,
+          frequency: RAGE_MODE_SIREN_NOTES[step],
+          endFrequency: RAGE_MODE_SIREN_NOTES[(step + 1) % RAGE_MODE_SIREN_NOTES.length],
+          gain: step % 2 === 0 ? 0.038 : 0.029,
+          type: "sawtooth",
+          attackMs: 6
+        },
+        startAt
+      );
+
+      if (step % 2 === 0) {
+        this.playNoise(
+          context,
+          {
+            durationMs: 46,
+            gain: 0.008,
+            filterFrequency: 1650 + step * 140
+          },
+          startAt
+        );
+      }
     }
 
     this.powerModeStep += 1;

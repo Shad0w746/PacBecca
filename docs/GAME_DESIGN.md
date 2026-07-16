@@ -49,7 +49,7 @@ The current Becca head uses a transparent sprite sheet cropped from all supplied
 
 ## Sound Direction
 
-PacBecca synthesizes short arcade sound effects and simple music loops in the browser with Web Audio instead of shipping audio files. Pickups use small chirps, yellow cans use celebratory rising tones, one-life losses use a playful bounce cue, the final three-lives-lost state uses a heavier dramatic cue, power mode adds a bright temporary sparkle loop, and active gameplay has an original temple-inspired chiptune ambience. The page chrome exposes a Sound On/Off toggle, and the preference is stored in browser-local storage.
+PacBecca synthesizes short arcade sound effects and simple music loops in the browser with Web Audio instead of shipping audio files. Pickups use small chirps, yellow cans use celebratory rising tones, one-life losses use a playful bounce cue, the final three-lives-lost state uses a heavier dramatic cue, power mode adds a bright temporary sparkle loop, Becca Rage adds a louder siren/drop cue with a short rage loop, and active gameplay has an original ancient-temple chiptune ambience. The background music can evoke adventure-game temple moods through drones, bell-like tones, and modal note choices, but it must not copy Zelda melodies, rhythm signatures, recordings, or sound effects. The page chrome exposes a Sound On/Off toggle, and the preference is stored in browser-local storage.
 
 ## Future Performance Note
 

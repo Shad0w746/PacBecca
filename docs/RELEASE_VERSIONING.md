@@ -5,7 +5,7 @@ PacBecca uses project-wide semantic versioning in `MAJOR.MINOR.PATCH` format.
 Current release:
 
 ```text
-0.5.5
+0.5.6
 ```
 
 ## Release Rule

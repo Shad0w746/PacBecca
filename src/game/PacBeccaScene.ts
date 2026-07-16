@@ -1182,8 +1182,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.secretClickTimesMs = [];
     this.ghostCombo = 0;
     this.reverseGhosts();
-    this.soundFx.startPowerMode(WRONG_WAY_HYPNO_DURATION_MS);
-    this.soundFx.play("rage");
+    this.soundFx.startRageMode(WRONG_WAY_HYPNO_DURATION_MS);
     this.cameras.main.flash(260, 255, 0, 230);
     this.cameras.main.shake(220, 0.004);
     this.hud.message.setText("PacBecca is mad. Hypno mode for this round!");
@@ -1213,8 +1212,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.hypnoRainbowUntilMs = this.time.now + WRONG_WAY_HYPNO_DURATION_MS;
     this.ghostCombo = 0;
     this.reverseGhosts();
-    this.soundFx.startPowerMode(WRONG_WAY_HYPNO_DURATION_MS);
-    this.soundFx.play("rage");
+    this.soundFx.startRageMode(WRONG_WAY_HYPNO_DURATION_MS);
     this.cameras.main.flash(180, 255, 0, 210);
     this.cameras.main.shake(160, 0.004);
     this.hud.message.setText("BECCA RAGE!!!");
