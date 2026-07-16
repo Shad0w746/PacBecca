@@ -8,8 +8,8 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 
 - Browser game.
 - Keyboard controls.
-- One original maze for the first version.
-- Ten level configs that scale speed, color, and vulnerability timing.
+- Ten original level mazes.
+- Ten level configs that scale speed, color, layout, and vulnerability timing.
 - Five ghosts with named personalities.
 - Ghost-sweep round win: eating each ghost at least once in one level immediately clears the round.
 - Yellow power cans with blue writing.
@@ -18,11 +18,14 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 - Txt-file-backed top-10 leaderboard with name submission after a run ends.
 - Collapsible side menu explaining objective, rules, and leaderboard.
 - Persistent top-right version badge.
+- Hidden-by-default diagnostic level dropdown beside Reset for quickly jumping to a level during testing.
 - Replaceable Becca head image.
 - Procedural arcade sound effects, simple background music, power-mode music, and a persistent Sound On/Off toggle.
 - Lazy-loaded Phaser/game scene so the start screen can render before the heavier game code downloads.
 
 ## Level Set
+
+Each level has a distinct maze layout while preserving the same 25x23 board size, Becca start, five ghost starts, and reachable pickup rules.
 
 1. Porch Practice
 2. Glitter Hall

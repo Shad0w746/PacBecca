@@ -13,6 +13,17 @@ export type GhostPersonality =
   | "drifter"
   | "interceptor";
 
+export const PACBECCA_SET_LEVEL_EVENT = "pacbecca:set-level";
+export const PACBECCA_LEVEL_CHANGED_EVENT = "pacbecca:level-changed";
+
+export interface PacBeccaSetLevelDetail {
+  level: number;
+}
+
+export interface PacBeccaLevelChangedDetail {
+  level: number;
+}
+
 export interface GridPoint {
   x: number;
   y: number;

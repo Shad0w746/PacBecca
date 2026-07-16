@@ -243,11 +243,30 @@ canvas {
   pointer-events: none;
 }
 
-.reset-button {
+.bottom-controls {
   position: absolute;
   right: 12px;
   bottom: 12px;
   z-index: 31;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.diagnostic-level-select {
+  min-width: 82px;
+  min-height: 40px;
+  border: 1px solid rgba(248, 250, 252, 0.22);
+  border-radius: 8px;
+  background: rgba(16, 16, 24, 0.88);
+  color: #f8fafc;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.reset-button {
   min-width: 88px;
   min-height: 40px;
   border: 0;
@@ -267,6 +286,7 @@ canvas {
 
 .control-button:focus-visible,
 .info-close:focus-visible,
+.diagnostic-level-select:focus-visible,
 .reset-button:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 3px;
@@ -487,9 +507,19 @@ canvas {
     font-size: 22px;
   }
 
-  .reset-button {
+  .bottom-controls {
     right: 10px;
     bottom: 10px;
+    gap: 6px;
+  }
+
+  .diagnostic-level-select {
+    min-width: 74px;
+    min-height: 36px;
+    font-size: 12px;
+  }
+
+  .reset-button {
     min-width: 76px;
     min-height: 36px;
     font-size: 13px;

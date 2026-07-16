@@ -46,6 +46,9 @@ import {
   GridPoint,
   LevelConfig,
   MazeModel,
+  PACBECCA_LEVEL_CHANGED_EVENT,
+  PACBECCA_SET_LEVEL_EVENT,
+  PacBeccaSetLevelDetail,
   PickupKind
 } from "./types";
 
@@ -198,6 +201,15 @@ export class PacBeccaScene extends Phaser.Scene {
   private readonly handleExternalReset = (): void => {
     this.restartGame();
   };
+  private readonly handleDiagnosticLevelChange = (event: Event): void => {
+    const level = (event as CustomEvent<PacBeccaSetLevelDetail>).detail?.level;
+    if (!Number.isInteger(level)) {
+      return;
+    }
+
+    const levelIndex = Phaser.Math.Clamp(level - 1, 0, LEVELS.length - 1);
+    this.startDiagnosticLevel(levelIndex);
+  };
   private readonly handleSoundPreferenceChange = (event: Event): void => {
     const enabled = (event as CustomEvent<{ enabled?: unknown }>).detail?.enabled;
     if (typeof enabled !== "boolean") {
@@ -263,10 +275,12 @@ export class PacBeccaScene extends Phaser.Scene {
     dispatchGameReady();
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handleSecretPlayerClick, this);
     window.addEventListener("pacbecca:reset-game", this.handleExternalReset);
+    window.addEventListener(PACBECCA_SET_LEVEL_EVENT, this.handleDiagnosticLevelChange);
     window.addEventListener(PACBECCA_SOUND_CHANGE_EVENT, this.handleSoundPreferenceChange);
     window.addEventListener(PACBECCA_AUDIO_PAUSE_EVENT, this.handleAudioPauseChange);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener("pacbecca:reset-game", this.handleExternalReset);
+      window.removeEventListener(PACBECCA_SET_LEVEL_EVENT, this.handleDiagnosticLevelChange);
       window.removeEventListener(PACBECCA_SOUND_CHANGE_EVENT, this.handleSoundPreferenceChange);
       window.removeEventListener(PACBECCA_AUDIO_PAUSE_EVENT, this.handleAudioPauseChange);
       this.soundFx.dispose();
@@ -389,6 +403,13 @@ export class PacBeccaScene extends Phaser.Scene {
     this.hud.message.setText("Clear the maze. Space fires Becca Burst at full meter.");
     this.soundFx.startBackgroundMusic();
     this.soundFx.play(levelIndex === 0 ? "start" : "levelStart");
+    window.dispatchEvent(
+      new CustomEvent(PACBECCA_LEVEL_CHANGED_EVENT, {
+        detail: {
+          level: this.level.id
+        }
+      })
+    );
   }
 
   private clearLevelObjects(): void {
@@ -1620,6 +1641,20 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    this.resetRunState();
+    this.soundFx.play("ui");
+    this.startLevel(0);
+    window.dispatchEvent(new CustomEvent("pacbecca:game-reset"));
+  }
+
+  private startDiagnosticLevel(levelIndex: number): void {
+    this.resetRunState();
+    this.soundFx.play("ui");
+    this.startLevel(levelIndex);
+    window.dispatchEvent(new CustomEvent("pacbecca:game-reset"));
+  }
+
+  private resetRunState(): void {
     this.score = 0;
     this.lives = 3;
     this.burstMeter = 0;
@@ -1627,9 +1662,9 @@ export class PacBeccaScene extends Phaser.Scene {
     this.powerHitRagePending = false;
     this.wrongWaySaveUsed = false;
     this.hypnoRainbowUntilMs = 0;
-    this.soundFx.play("ui");
-    this.startLevel(0);
-    window.dispatchEvent(new CustomEvent("pacbecca:game-reset"));
+    this.secretHypnoUsedThisSession = false;
+    this.secretHypnoLevelIndex = null;
+    this.secretClickTimesMs = [];
   }
 
   private updateGhostAppearance(ghost: GhostEntity): void {

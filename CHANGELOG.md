@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 - 2026-07-16
+
+- Added unique maze layouts for all 10 levels while keeping each maze fully reachable.
+- Added a hidden-by-default diagnostic level dropdown next to Reset for jumping directly into any level when testing with `?diagnostics=1`.
+- Added maze coverage for unique layouts plus reachable pickups and ghost starts.
+
 ## 0.5.6 - 2026-07-16
 
 - Made power-up mode louder and more playful with a brighter arcade intro and bouncier sparkle loop.

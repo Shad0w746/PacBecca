@@ -61,12 +61,11 @@ Publish the regenerated Squarespace embed, submit a score from the live page, th
 17. Confirm Enter restarts after game over or victory.
 18. Collect a yellow can and confirm power-up mode has an obvious playful intro and looping sparkle sound.
 19. Trigger Becca Rage and confirm it has a distinct siren/drop sound separate from regular power-up mode.
+20. Open the game with `?diagnostics=1`, use the lower-right level dropdown to jump to levels 2, 5, and 10, and confirm each has a different maze and resets to 3 lives with score 0.
 
 ## Next Build Pass
 
 - Tune `public/assets/becca-head.png` if Becca wants a different crop, expression, or style.
 - Decide the final rule changes and tune Burst duration.
-- Add unique maze layouts for levels 2 through 10.
-- Add original sound effects.
 - Add mobile swipe controls.
 - Add a start/options screen after the core loop feels good.

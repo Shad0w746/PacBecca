@@ -16,6 +16,11 @@ import {
   type PacBeccaLoadingErrorDetail,
   type PacBeccaLoadingProgressDetail
 } from "./game/loadingEvents";
+import {
+  PACBECCA_LEVEL_CHANGED_EVENT,
+  PACBECCA_SET_LEVEL_EVENT,
+  type PacBeccaLevelChangedDetail
+} from "./game/types";
 import { setupLeaderboard } from "./ui/leaderboard";
 
 type PhaserRuntime = typeof Phaser;
@@ -31,6 +36,7 @@ const START_LOADING_CODE_STATUS = "Loading game code...";
 const START_LOADING_ASSETS_STATUS = "Loading Becca and rage images...";
 const START_READY_TO_PLAY_STATUS = "Ready to play.";
 const START_LOAD_ERROR_STATUS = "The game could not load. Try again.";
+const DIAGNOSTIC_QUERY_PARAM = "diagnostics";
 
 let game: PhaserGame | null = null;
 let gameLoadPromise: Promise<void> | null = null;
@@ -45,6 +51,7 @@ const infoToggle = document.querySelector<HTMLButtonElement>("#info-toggle");
 const leaderboardToggle = document.querySelector<HTMLButtonElement>("#leaderboard-toggle");
 const pauseToggle = document.querySelector<HTMLButtonElement>("#pause-toggle");
 const soundToggle = document.querySelector<HTMLButtonElement>("#sound-toggle");
+const diagnosticLevelSelect = document.querySelector<HTMLSelectElement>("#diagnostic-level");
 const infoOverlay = document.querySelector<HTMLElement>("#info-overlay");
 const infoClose = document.querySelector<HTMLButtonElement>("#info-close");
 const leaderboardSection = document.querySelector<HTMLElement>("#leaderboard-section");
@@ -59,6 +66,25 @@ let viewportRefreshFrame = 0;
 let lastViewportSize = "";
 let userPaused = false;
 let soundEnabled = readStoredSoundEnabled();
+
+function isDiagnosticModeEnabled(): boolean {
+  const searchParams = new URLSearchParams(window.location.search);
+  return (
+    searchParams.get(DIAGNOSTIC_QUERY_PARAM) === "1" ||
+    window.location.hash === "#diagnostics"
+  );
+}
+
+function setDiagnosticControlsVisible(visible: boolean): void {
+  if (!diagnosticLevelSelect) {
+    return;
+  }
+
+  diagnosticLevelSelect.hidden = !visible;
+  diagnosticLevelSelect.disabled = !visible;
+}
+
+setDiagnosticControlsVisible(isDiagnosticModeEnabled());
 
 function refreshViewportSize(): void {
   viewportRefreshFrame = 0;
@@ -307,6 +333,40 @@ function setRestartPromptVisible(visible: boolean): void {
   restartPrompt.hidden = !visible;
 }
 
+function syncDiagnosticLevelSelect(level: number): void {
+  if (!diagnosticLevelSelect) {
+    return;
+  }
+
+  diagnosticLevelSelect.value = String(level);
+}
+
+async function setDiagnosticLevelFromUi(level: number): Promise<void> {
+  const levelCount = diagnosticLevelSelect?.options.length ?? 0;
+  if (
+    !diagnosticLevelSelect ||
+    diagnosticLevelSelect.hidden ||
+    !Number.isInteger(level) ||
+    level < 1 ||
+    level > levelCount
+  ) {
+    return;
+  }
+
+  setRestartPromptVisible(false);
+  setInfoOverlay(false, { restoreFocus: false });
+  userPaused = false;
+  await startGame();
+  syncGamePauseState();
+  window.dispatchEvent(
+    new CustomEvent(PACBECCA_SET_LEVEL_EVENT, {
+      detail: {
+        level
+      }
+    })
+  );
+}
+
 infoToggle?.addEventListener("click", () => setInfoOverlay(true, { target: "rules" }));
 leaderboardToggle?.addEventListener("click", () =>
   setInfoOverlay(true, { target: "leaderboard" })
@@ -322,6 +382,13 @@ pauseToggle?.addEventListener("click", () => {
 soundToggle?.addEventListener("click", () => {
   setSoundEnabled(!soundEnabled);
   soundToggle.blur();
+});
+diagnosticLevelSelect?.addEventListener("change", () => {
+  const level = Number(diagnosticLevelSelect.value);
+  void setDiagnosticLevelFromUi(level).catch((error: unknown) => {
+    console.error(error);
+  });
+  diagnosticLevelSelect.blur();
 });
 document.addEventListener(
   "click",
@@ -397,6 +464,13 @@ window.addEventListener("pacbecca:final-score", () => {
 
 window.addEventListener("pacbecca:game-reset", () => {
   setRestartPromptVisible(false);
+});
+
+window.addEventListener(PACBECCA_LEVEL_CHANGED_EVENT, (event) => {
+  const level = (event as CustomEvent<PacBeccaLevelChangedDetail>).detail?.level;
+  if (Number.isInteger(level)) {
+    syncDiagnosticLevelSelect(level);
+  }
 });
 
 window.addEventListener("message", (event) => {
