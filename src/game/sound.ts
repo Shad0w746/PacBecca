@@ -14,6 +14,7 @@ export type PacBeccaSoundName =
   | "ghost"
   | "rearGhost"
   | "hit"
+  | "death"
   | "rage"
   | "levelClear"
   | "win"
@@ -46,8 +47,20 @@ interface SoundCue {
 
 const MASTER_GAIN = 0.34;
 const MIN_GAIN = 0.0001;
-const BACKGROUND_MUSIC_STEP_MS = 185;
+const BACKGROUND_MUSIC_STEP_MS = 240;
 const POWER_MODE_STEP_MS = 116;
+const BACKGROUND_BASS_NOTES = [110, 82.41, 98, 73.42] as const;
+const BACKGROUND_BELL_NOTES = new Map<number, number>([
+  [0, 440],
+  [3, 523.25],
+  [7, 659.25],
+  [11, 587.33],
+  [16, 392],
+  [19, 493.88],
+  [23, 587.33],
+  [28, 783.99]
+]);
+const BACKGROUND_SHIMMER_STEPS = new Set([6, 14, 22, 30]);
 
 const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   ui: {
@@ -122,6 +135,14 @@ const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
     ],
     noise: [{ durationMs: 120, gain: 0.024, filterFrequency: 520 }]
   },
+  death: {
+    tones: [
+      { durationMs: 120, frequency: 783.99, endFrequency: 392, gain: 0.085, type: "square" },
+      { offsetMs: 95, durationMs: 110, frequency: 587.33, endFrequency: 880, gain: 0.055, type: "triangle" },
+      { offsetMs: 190, durationMs: 135, frequency: 440, endFrequency: 659.25, gain: 0.05, type: "sine" }
+    ],
+    noise: [{ offsetMs: 20, durationMs: 80, gain: 0.014, filterFrequency: 1200 }]
+  },
   rage: {
     tones: [
       { durationMs: 180, frequency: 233.08, endFrequency: 466.16, gain: 0.12, type: "sawtooth" },
@@ -149,10 +170,12 @@ const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   },
   gameOver: {
     tones: [
-      { durationMs: 150, frequency: 392, endFrequency: 349.23, gain: 0.085, type: "triangle" },
-      { offsetMs: 130, durationMs: 170, frequency: 261.63, endFrequency: 220, gain: 0.09, type: "triangle" },
-      { offsetMs: 280, durationMs: 260, frequency: 164.81, endFrequency: 82.41, gain: 0.095, type: "sawtooth" }
-    ]
+      { durationMs: 230, frequency: 392, endFrequency: 293.66, gain: 0.085, type: "triangle" },
+      { offsetMs: 160, durationMs: 260, frequency: 261.63, endFrequency: 196, gain: 0.085, type: "triangle" },
+      { offsetMs: 340, durationMs: 430, frequency: 164.81, endFrequency: 82.41, gain: 0.1, type: "sawtooth" },
+      { offsetMs: 430, durationMs: 520, frequency: 98, endFrequency: 49, gain: 0.075, type: "sine" }
+    ],
+    noise: [{ offsetMs: 190, durationMs: 520, gain: 0.018, filterFrequency: 260 }]
   }
 };
 
@@ -379,48 +402,86 @@ export class PacBeccaAudio {
       return;
     }
 
-    const step = this.backgroundMusicStep % 16;
+    const step = this.backgroundMusicStep % 32;
     const startAt = context.currentTime + 0.018;
-    const bassNotes = [130.81, 164.81, 196, 164.81];
-    const melodyNotes = [523.25, 659.25, 783.99, 659.25, 880, 783.99];
-    const melodySteps = [0, 3, 6, 9, 12, 15];
 
-    if (step % 4 === 0) {
+    if (step % 8 === 0) {
+      const bassFrequency = BACKGROUND_BASS_NOTES[Math.floor(step / 8)];
       this.playTone(
         context,
         {
-          durationMs: 125,
-          frequency: bassNotes[Math.floor(step / 4)],
-          gain: 0.022,
+          durationMs: 680,
+          frequency: bassFrequency,
+          gain: 0.014,
           type: "triangle",
-          attackMs: 14
+          attackMs: 70
+        },
+        startAt
+      );
+
+      this.playTone(
+        context,
+        {
+          offsetMs: 28,
+          durationMs: 720,
+          frequency: bassFrequency * 2,
+          gain: 0.006,
+          type: "sine",
+          attackMs: 90
         },
         startAt
       );
     }
 
-    const melodyIndex = melodySteps.indexOf(step);
-    if (melodyIndex >= 0) {
+    if (step === 0 || step === 16) {
       this.playTone(
         context,
         {
-          durationMs: 86,
-          frequency: melodyNotes[melodyIndex],
-          gain: 0.018,
+          durationMs: 1500,
+          frequency: step === 0 ? 220 : 196,
+          gain: 0.006,
           type: "sine",
-          attackMs: 10
+          attackMs: 160
         },
-        startAt + 0.012
+        startAt
       );
     }
 
-    if ([2, 7, 10, 14].includes(step)) {
+    const bellFrequency = BACKGROUND_BELL_NOTES.get(step);
+    if (bellFrequency) {
+      this.playTone(
+        context,
+        {
+          durationMs: 170,
+          frequency: bellFrequency,
+          gain: 0.014,
+          type: "triangle",
+          attackMs: 14
+        },
+        startAt + 0.01
+      );
+
+      this.playTone(
+        context,
+        {
+          offsetMs: 95,
+          durationMs: 180,
+          frequency: bellFrequency * 1.5,
+          gain: 0.0045,
+          type: "sine",
+          attackMs: 20
+        },
+        startAt
+      );
+    }
+
+    if (BACKGROUND_SHIMMER_STEPS.has(step)) {
       this.playNoise(
         context,
         {
-          durationMs: 28,
-          gain: 0.0045,
-          filterFrequency: 2400
+          durationMs: 34,
+          gain: 0.0032,
+          filterFrequency: 1850
         },
         startAt
       );

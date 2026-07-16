@@ -12,6 +12,7 @@ PacBecca should be a maze-chase game, not a Pac-Man clone.
 ## Avoid
 
 - Do not copy Pac-Man maze layouts, cabinet art, character shapes, sounds, music, fonts, level fruit, attract screens, or branding.
+- Do not use copyrighted music from other games, including Zelda or other Nintendo soundtracks; compose original cues that only evoke a broad mood.
 - Do not use Pac-Man, Namco, Bandai Namco, Blinky, Pinky, Inky, or Clyde as in-game branding or character names.
 - Do not make ghost sprites with the same silhouette, eye style, color set, and movement presentation as the original.
 

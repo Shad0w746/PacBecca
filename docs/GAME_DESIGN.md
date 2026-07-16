@@ -49,7 +49,7 @@ The current Becca head uses a transparent sprite sheet cropped from all supplied
 
 ## Sound Direction
 
-PacBecca synthesizes short arcade sound effects and simple music loops in the browser with Web Audio instead of shipping audio files. Pickups use small chirps, yellow cans use celebratory rising tones, power mode adds a bright temporary sparkle loop, active gameplay has a quiet background groove, and round-ending states use short fanfares. The page chrome exposes a Sound On/Off toggle, and the preference is stored in browser-local storage.
+PacBecca synthesizes short arcade sound effects and simple music loops in the browser with Web Audio instead of shipping audio files. Pickups use small chirps, yellow cans use celebratory rising tones, one-life losses use a playful bounce cue, the final three-lives-lost state uses a heavier dramatic cue, power mode adds a bright temporary sparkle loop, and active gameplay has an original temple-inspired chiptune ambience. The page chrome exposes a Sound On/Off toggle, and the preference is stored in browser-local storage.
 
 ## Future Performance Note
 

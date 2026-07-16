@@ -1481,7 +1481,7 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
-    this.soundFx.play("hit");
+    this.soundFx.play("death");
     this.lifeResetEvent?.remove(false);
     this.lifeResetEvent = this.time.delayedCall(900, () => {
       this.lifeResetEvent = undefined;

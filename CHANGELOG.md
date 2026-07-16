@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5 - 2026-07-16
+
+- Added a playful one-life-lost sound that is separate from the final game-over cue.
+- Made the final game-over sound more dramatic when all three lives are gone.
+- Reworked the background loop into an original temple-inspired chiptune ambience without using copyrighted Zelda music.
+
 ## 0.5.4 - 2026-07-16
 
 - Added a local production deployment helper that validates, builds with the GitHub Pages base path, pushes `main`, watches CI/Pages, and smoke-checks the live site.
