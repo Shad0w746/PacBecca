@@ -19,6 +19,7 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 - Collapsible side menu explaining objective, rules, and leaderboard.
 - Persistent top-right version badge.
 - Replaceable Becca head image.
+- Procedural arcade sound effects with a persistent Sound On/Off toggle.
 
 ## Level Set
 
@@ -44,3 +45,7 @@ PacBecca is a bright, fast, personal maze-chase game where Becca clears 10 theme
 ## Asset Direction
 
 The current Becca head uses a transparent sprite sheet cropped from all supplied Snagit reference images. The game draws the open/close mouth live so the swallow animation can face the movement direction.
+
+## Sound Direction
+
+PacBecca synthesizes short arcade sound effects in the browser with Web Audio instead of shipping audio files. Pickups use small chirps, power events use bigger rising sweeps, ghost hits use sharper stingers, and round-ending states use short fanfares. The page chrome exposes a Sound On/Off toggle, and the preference is stored in browser-local storage.

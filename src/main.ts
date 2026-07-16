@@ -2,6 +2,12 @@ import Phaser from "phaser";
 import "./styles.css";
 import packageJson from "../package.json";
 import { PacBeccaScene } from "./game/PacBeccaScene";
+import {
+  PACBECCA_SOUND_CHANGE_EVENT,
+  getSoundToggleLabel,
+  readStoredSoundEnabled,
+  writeStoredSoundEnabled
+} from "./game/sound";
 import { setupLeaderboard } from "./ui/leaderboard";
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -29,6 +35,7 @@ const leaderboardRestartButton = document.querySelector<HTMLButtonElement>("#lea
 const infoToggle = document.querySelector<HTMLButtonElement>("#info-toggle");
 const leaderboardToggle = document.querySelector<HTMLButtonElement>("#leaderboard-toggle");
 const pauseToggle = document.querySelector<HTMLButtonElement>("#pause-toggle");
+const soundToggle = document.querySelector<HTMLButtonElement>("#sound-toggle");
 const infoOverlay = document.querySelector<HTMLElement>("#info-overlay");
 const infoClose = document.querySelector<HTMLButtonElement>("#info-close");
 const leaderboardSection = document.querySelector<HTMLElement>("#leaderboard-section");
@@ -42,6 +49,7 @@ document.querySelector("#version-badge")!.textContent = `v${packageJson.version}
 let viewportRefreshFrame = 0;
 let lastViewportSize = "";
 let userPaused = false;
+let soundEnabled = readStoredSoundEnabled();
 
 function refreshViewportSize(): void {
   viewportRefreshFrame = 0;
@@ -96,6 +104,28 @@ function setPauseButtonState(): void {
   pauseToggle.textContent = userPaused ? "Resume" : "Pause";
   pauseToggle.setAttribute("aria-pressed", String(userPaused));
   pauseToggle.disabled = !game;
+}
+
+function setSoundButtonState(): void {
+  if (!soundToggle) {
+    return;
+  }
+
+  soundToggle.textContent = getSoundToggleLabel(soundEnabled);
+  soundToggle.setAttribute("aria-pressed", String(soundEnabled));
+}
+
+function setSoundEnabled(enabled: boolean): void {
+  soundEnabled = enabled;
+  writeStoredSoundEnabled(enabled);
+  setSoundButtonState();
+  window.dispatchEvent(
+    new CustomEvent(PACBECCA_SOUND_CHANGE_EVENT, {
+      detail: {
+        enabled
+      }
+    })
+  );
 }
 
 function syncGamePauseState(): void {
@@ -209,6 +239,10 @@ pauseToggle?.addEventListener("click", () => {
   }
   setUserPaused(!userPaused);
   pauseToggle.blur();
+});
+soundToggle?.addEventListener("click", () => {
+  setSoundEnabled(!soundEnabled);
+  soundToggle.blur();
 });
 document.addEventListener(
   "click",
@@ -340,6 +374,7 @@ leaderboardRestartButton?.addEventListener("click", () => {
 });
 
 setPauseButtonState();
+setSoundButtonState();
 
 if (!startButton || !startScreen) {
   startGame();

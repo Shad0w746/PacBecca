@@ -28,6 +28,11 @@ import {
 } from "./maze";
 import { chooseRandomTurn, chooseTurnTowardTarget } from "./pathfinding";
 import {
+  PACBECCA_SOUND_CHANGE_EVENT,
+  PacBeccaAudio,
+  readStoredSoundEnabled
+} from "./sound";
+import {
   Direction,
   GhostConfig,
   GhostMood,
@@ -183,8 +188,20 @@ export class PacBeccaScene extends Phaser.Scene {
   private lifeResetEvent?: Phaser.Time.TimerEvent;
   private levelAdvanceEvent?: Phaser.Time.TimerEvent;
   private ended = false;
+  private readonly soundFx = new PacBeccaAudio();
   private readonly handleExternalReset = (): void => {
     this.restartGame();
+  };
+  private readonly handleSoundPreferenceChange = (event: Event): void => {
+    const enabled = (event as CustomEvent<{ enabled?: unknown }>).detail?.enabled;
+    if (typeof enabled !== "boolean") {
+      return;
+    }
+
+    this.soundFx.setEnabled(enabled);
+    if (enabled) {
+      this.soundFx.play("ui");
+    }
   };
 
   constructor() {
@@ -210,12 +227,16 @@ export class PacBeccaScene extends Phaser.Scene {
     >;
     this.input.keyboard!.removeCapture("UP,DOWN,LEFT,RIGHT,SPACE,SHIFT,W,A,S,D,ENTER");
 
+    this.soundFx.setEnabled(readStoredSoundEnabled());
     this.createHud();
     this.startLevel(0);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handleSecretPlayerClick, this);
     window.addEventListener("pacbecca:reset-game", this.handleExternalReset);
+    window.addEventListener(PACBECCA_SOUND_CHANGE_EVENT, this.handleSoundPreferenceChange);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener("pacbecca:reset-game", this.handleExternalReset);
+      window.removeEventListener(PACBECCA_SOUND_CHANGE_EVENT, this.handleSoundPreferenceChange);
+      this.soundFx.dispose();
     });
   }
 
@@ -332,6 +353,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.ghosts = this.createGhosts();
     this.updateHud();
     this.hud.message.setText("Clear the maze. Space fires Becca Burst at full meter.");
+    this.soundFx.play(levelIndex === 0 ? "start" : "levelStart");
   }
 
   private clearLevelObjects(): void {
@@ -989,10 +1011,12 @@ export class PacBeccaScene extends Phaser.Scene {
     if (pickup === "pellet") {
       this.score += 10;
       this.addBurst(1);
+      this.soundFx.play("pellet");
     } else if (pickup === "power") {
       this.score += 50;
       this.addBurst(18);
       this.powerCansCollected += 1;
+      this.soundFx.play("power");
       // Arm the rage flash here; display it only after the next ghost contact.
       if (this.powerCansCollected === 1) {
         this.powerHitRagePending = true;
@@ -1002,6 +1026,7 @@ export class PacBeccaScene extends Phaser.Scene {
     } else {
       this.score += 125;
       this.addBurst(28);
+      this.soundFx.play("heart");
     }
 
     if (this.maze.pickups.size === 0) {
@@ -1068,6 +1093,7 @@ export class PacBeccaScene extends Phaser.Scene {
   private triggerBurst(): void {
     this.burstMeter = 0;
     this.frightenGhosts(this.level.burstDurationMs);
+    this.soundFx.play("burst");
     this.cameras.main.flash(160, 244, 114, 182);
     this.hud.message.setText("Becca Burst!");
   }
@@ -1120,6 +1146,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.secretClickTimesMs = [];
     this.ghostCombo = 0;
     this.reverseGhosts();
+    this.soundFx.play("rage");
     this.cameras.main.flash(260, 255, 0, 230);
     this.cameras.main.shake(220, 0.004);
     this.hud.message.setText("PacBecca is mad. Hypno mode for this round!");
@@ -1149,6 +1176,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.hypnoRainbowUntilMs = this.time.now + WRONG_WAY_HYPNO_DURATION_MS;
     this.ghostCombo = 0;
     this.reverseGhosts();
+    this.soundFx.play("rage");
     this.cameras.main.flash(180, 255, 0, 210);
     this.cameras.main.shake(160, 0.004);
     this.hud.message.setText("BECCA RAGE!!!");
@@ -1161,6 +1189,7 @@ export class PacBeccaScene extends Phaser.Scene {
     }
 
     this.powerHitRagePending = false;
+    this.soundFx.play("rage");
     this.cameras.main.flash(180, 255, 236, 59);
     this.showBeccaRageTextFlash();
   }
@@ -1374,6 +1403,7 @@ export class PacBeccaScene extends Phaser.Scene {
     ghost.progress = 1;
     this.ghostEatsThisRound += 1;
     this.eatenGhostIds.add(ghost.config.id);
+    this.soundFx.play(hitType === "rear" ? "rearGhost" : "ghost");
     const eatenCount = Math.min(this.eatenGhostIds.size, this.ghosts.length);
     this.hud.message.setText(
       hitType === "rear"
@@ -1413,6 +1443,7 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
+    this.soundFx.play("hit");
     this.lifeResetEvent?.remove(false);
     this.lifeResetEvent = this.time.delayedCall(900, () => {
       this.lifeResetEvent = undefined;
@@ -1474,6 +1505,7 @@ export class PacBeccaScene extends Phaser.Scene {
       return;
     }
 
+    this.soundFx.play("levelClear");
     this.hud.message.setText(message);
     this.levelAdvanceEvent = this.time.delayedCall(900, () => {
       this.levelAdvanceEvent = undefined;
@@ -1483,6 +1515,7 @@ export class PacBeccaScene extends Phaser.Scene {
 
   private endGame(won: boolean): void {
     this.ended = true;
+    this.soundFx.play(won ? "win" : "gameOver");
     this.showRestartPrompt();
     this.publishFinalScore(won);
     this.hud.message.setText(
@@ -1555,6 +1588,7 @@ export class PacBeccaScene extends Phaser.Scene {
     this.powerHitRagePending = false;
     this.wrongWaySaveUsed = false;
     this.hypnoRainbowUntilMs = 0;
+    this.soundFx.play("ui");
     this.startLevel(0);
     window.dispatchEvent(new CustomEvent("pacbecca:game-reset"));
   }

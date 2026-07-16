@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 - 2026-07-15
+
+- Added procedural arcade sound effects for pickups, Becca Burst, ghost eats, hits, rage moments, level clears, victory, and game over.
+- Added a persistent Sound On/Off control that can mute or re-enable audio during play.
+- Documented the browser-local sound preference and added unit coverage for the sound preference helpers.
+
 ## 0.5.0 - 2026-07-15
 
 - Standardized PacBecca project versioning on `MAJOR.MINOR.PATCH` format.

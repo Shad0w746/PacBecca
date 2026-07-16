@@ -178,6 +178,16 @@ canvas {
   color: #172554;
 }
 
+.sound-button[aria-pressed="true"] {
+  border-color: rgba(94, 234, 212, 0.78);
+  background: rgba(20, 184, 166, 0.88);
+  color: #f8fafc;
+}
+
+.sound-button[aria-pressed="false"] {
+  color: #cbd5e1;
+}
+
 .game-title {
   position: absolute;
   top: 14px;
@@ -446,6 +456,10 @@ canvas {
 }
 
 @media (max-width: 540px) {
+  .game-title {
+    display: none;
+  }
+
   .submit-row {
     grid-template-columns: 1fr;
   }

@@ -17,6 +17,7 @@ Press `Start Game` to begin after the page loads.
 - Arrow keys or WASD: move Becca
 - Space: use Becca Burst when the meter is full
 - Enter: restart after game over or victory
+- Sound On/Off: mute or re-enable arcade sound effects
 - Becca's head chomps in the direction of movement while she clears pickups.
 
 ## Becca Head Asset
@@ -33,6 +34,7 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 - Becca Burst briefly makes every active ghost vulnerable.
 - Finish a run to submit your name to the top-10 leaderboard in `public/leaderboard.txt`.
 - Open the collapsible rules menu to review the objective, rules, and leaderboard.
+- Sound effects are synthesized in the browser and can be muted with the Sound On/Off control. The preference is stored locally in the browser.
 - The five ghosts have distinct target-tile behaviors:
   - Frosty: direct pursuer.
   - Megasen: ambushes ahead of Becca.
@@ -84,7 +86,7 @@ For Squarespace page-code output, run `pnpm build:squarespace:embed`. Set `PACBE
 
 ## Release Versioning
 
-PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.0`.
+PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.1`.
 
 Before every production code push to `main`, update `package.json`, `VERSION`, and `CHANGELOG.md`, then run:
 
