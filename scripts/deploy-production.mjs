@@ -45,13 +45,13 @@ async function main() {
 
 function run(command, args, options = {}) {
   log(`$ ${[command, ...args].join(" ")}`);
-  const result = spawnSync(executable(command), args, {
+  const invocation = commandInvocation(command, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd: new URL("..", import.meta.url),
     env: {
       ...process.env,
       ...(options.env ?? {})
     },
-    shell: process.platform === "win32",
     stdio: "inherit"
   });
 
@@ -61,10 +61,10 @@ function run(command, args, options = {}) {
 }
 
 function output(command, args) {
-  const result = spawnSync(executable(command), args, {
+  const invocation = commandInvocation(command, args);
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd: new URL("..", import.meta.url),
     env: process.env,
-    shell: process.platform === "win32",
     encoding: "utf8"
   });
 
@@ -139,12 +139,15 @@ async function verifyLiveSite() {
   }
 }
 
-function executable(command) {
-  if (process.platform !== "win32") {
-    return command;
+function commandInvocation(command, args) {
+  if (command === "pnpm" && process.env.npm_execpath) {
+    return {
+      command: process.execPath,
+      args: [process.env.npm_execpath, ...args]
+    };
   }
 
-  return command === "pnpm" ? "pnpm.cmd" : command;
+  return { command, args };
 }
 
 function log(message) {
