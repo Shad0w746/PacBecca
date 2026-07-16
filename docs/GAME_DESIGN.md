@@ -50,3 +50,7 @@ The current Becca head uses a transparent sprite sheet cropped from all supplied
 ## Sound Direction
 
 PacBecca synthesizes short arcade sound effects and simple music loops in the browser with Web Audio instead of shipping audio files. Pickups use small chirps, yellow cans use celebratory rising tones, power mode adds a bright temporary sparkle loop, active gameplay has a quiet background groove, and round-ending states use short fanfares. The page chrome exposes a Sound On/Off toggle, and the preference is stored in browser-local storage.
+
+## Future Performance Note
+
+Revisit Phaser before a larger performance-focused release. Phaser is currently lazy-loaded behind the start screen, but it still dominates the deferred JavaScript payload. Evaluate replacing it with a smaller custom Canvas renderer, PixiJS, or another lightweight 2D runtime once core gameplay settles. A replacement should preserve the tile-based movement model, existing asset/loading behavior, audio controls, GitHub Pages base-path support, and leaderboard integration while reducing download size and start latency.
