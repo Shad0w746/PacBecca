@@ -94,6 +94,7 @@ canvas {
   display: grid;
   gap: 18px;
   justify-items: center;
+  width: min(420px, 100%);
 }
 
 .start-panel h1 {
@@ -120,6 +121,46 @@ canvas {
 .start-button:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 4px;
+}
+
+.start-button:disabled {
+  cursor: wait;
+  opacity: 0.82;
+}
+
+.start-status {
+  min-height: 20px;
+  margin: -4px 0 0;
+  color: #dbeafe;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.start-progress {
+  width: min(280px, 100%);
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(248, 250, 252, 0.24);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.84);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.start-screen.is-loading .start-progress {
+  opacity: 1;
+}
+
+.start-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #facc15, #38bdf8, #f472b6);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 120ms ease;
 }
 
 .version-badge {

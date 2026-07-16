@@ -59,6 +59,20 @@
           <div class="start-panel">
             <h1 id="start-title">PacBecca</h1>
             <button id="start-game" class="start-button" type="button">Start Game</button>
+            <p id="start-status" class="start-status" role="status" aria-live="polite">
+              Ready when you are.
+            </p>
+            <div
+              id="start-progress"
+              class="start-progress"
+              role="progressbar"
+              aria-label="Game loading progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+              <span id="start-progress-bar"></span>
+            </div>
           </div>
         </div>
       </section>

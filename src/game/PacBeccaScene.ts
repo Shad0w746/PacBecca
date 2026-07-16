@@ -34,6 +34,11 @@ import {
   readStoredSoundEnabled
 } from "./sound";
 import {
+  dispatchGameReady,
+  dispatchLoadingError,
+  dispatchLoadingProgress
+} from "./loadingEvents";
+import {
   Direction,
   GhostConfig,
   GhostMood,
@@ -216,6 +221,23 @@ export class PacBeccaScene extends Phaser.Scene {
   }
 
   preload(): void {
+    dispatchLoadingProgress(0.16, "Loading Becca and rage images...");
+    this.load.on(Phaser.Loader.Events.PROGRESS, (progress: number) => {
+      dispatchLoadingProgress(0.16 + progress * 0.78, `Loading game assets... ${Math.round(progress * 100)}%`);
+    });
+    this.load.once(Phaser.Loader.Events.COMPLETE, (_loader: unknown, _totalComplete: number, totalFailed: number) => {
+      if (totalFailed > 0) {
+        dispatchLoadingError("Some game images could not load.");
+        return;
+      }
+
+      dispatchLoadingProgress(0.96, "Preparing maze...");
+    });
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: { key?: unknown }) => {
+      const key = typeof file.key === "string" ? file.key : "a game image";
+      dispatchLoadingError(`Could not load ${key}.`);
+    });
+
     this.load.image("becca-head", AVATAR_ASSET_PATH);
     this.load.spritesheet("becca-head-sheet", AVATAR_SHEET_ASSET_PATH, {
       frameWidth: AVATAR_FRAME_SIZE,
@@ -237,6 +259,8 @@ export class PacBeccaScene extends Phaser.Scene {
     this.soundFx.setEnabled(readStoredSoundEnabled());
     this.createHud();
     this.startLevel(0);
+    dispatchLoadingProgress(1, "Ready to play.");
+    dispatchGameReady();
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handleSecretPlayerClick, this);
     window.addEventListener("pacbecca:reset-game", this.handleExternalReset);
     window.addEventListener(PACBECCA_SOUND_CHANGE_EVENT, this.handleSoundPreferenceChange);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.3 - 2026-07-16
+
+- Added a real start loading screen that stays visible while Phaser, Becca, and all rage images load.
+- Kept rage screenshots in the up-front game preload so rage mode is ready before gameplay begins.
+
 ## 0.5.2 - 2026-07-16
 
 - Added a simple looping background music layer during active gameplay.

@@ -9,6 +9,13 @@ import {
   readStoredSoundEnabled,
   writeStoredSoundEnabled
 } from "./game/sound";
+import {
+  PACBECCA_GAME_READY_EVENT,
+  PACBECCA_LOADING_ERROR_EVENT,
+  PACBECCA_LOADING_PROGRESS_EVENT,
+  type PacBeccaLoadingErrorDetail,
+  type PacBeccaLoadingProgressDetail
+} from "./game/loadingEvents";
 import { setupLeaderboard } from "./ui/leaderboard";
 
 type PhaserRuntime = typeof Phaser;
@@ -19,11 +26,19 @@ type PacBeccaSceneConstructor = typeof import("./game/PacBeccaScene").PacBeccaSc
 const GAME_SCENE_KEY = "pacbecca";
 const START_BUTTON_LABEL = "Start Game";
 const START_BUTTON_LOADING_LABEL = "Loading...";
+const START_READY_STATUS = "Ready when you are.";
+const START_LOADING_CODE_STATUS = "Loading game code...";
+const START_LOADING_ASSETS_STATUS = "Loading Becca and rage images...";
+const START_READY_TO_PLAY_STATUS = "Ready to play.";
+const START_LOAD_ERROR_STATUS = "The game could not load. Try again.";
 
 let game: PhaserGame | null = null;
 let gameLoadPromise: Promise<void> | null = null;
 const startScreen = document.querySelector<HTMLElement>("#start-screen");
 const startButton = document.querySelector<HTMLButtonElement>("#start-game");
+const startStatus = document.querySelector<HTMLElement>("#start-status");
+const startProgress = document.querySelector<HTMLElement>("#start-progress");
+const startProgressBar = document.querySelector<HTMLElement>("#start-progress-bar");
 const resetButton = document.querySelector<HTMLButtonElement>("#reset-game");
 const leaderboardRestartButton = document.querySelector<HTMLButtonElement>("#leaderboard-restart");
 const infoToggle = document.querySelector<HTMLButtonElement>("#info-toggle");
@@ -121,6 +136,69 @@ function setSoundEnabled(enabled: boolean): void {
     })
   );
 }
+
+function setStartLoadingState(loading: boolean, message: string, progress: number): void {
+  startScreen?.classList.toggle("is-loading", loading);
+  startButton?.toggleAttribute("disabled", loading);
+  if (startButton) {
+    startButton.textContent = loading ? START_BUTTON_LOADING_LABEL : START_BUTTON_LABEL;
+  }
+
+  updateStartLoadingProgress(message, progress);
+}
+
+function updateStartLoadingProgress(message: string, progress: number): void {
+  const clampedProgress = Math.min(1, Math.max(0, progress));
+  const percent = Math.round(clampedProgress * 100);
+
+  if (startStatus) {
+    startStatus.textContent = message;
+  }
+  startProgress?.setAttribute("aria-valuenow", String(percent));
+  if (startProgressBar) {
+    startProgressBar.style.transform = `scaleX(${clampedProgress})`;
+  }
+}
+
+function revealLoadedGame(): void {
+  startScreen?.classList.add("is-hidden");
+  startScreen?.setAttribute("aria-hidden", "true");
+  setPauseButtonState();
+  syncGamePauseState();
+  scheduleViewportRefresh();
+}
+
+function waitForGameReady(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = (): void => {
+      window.removeEventListener(PACBECCA_GAME_READY_EVENT, handleReady);
+      window.removeEventListener(PACBECCA_LOADING_ERROR_EVENT, handleLoadingError);
+    };
+
+    const handleReady = (): void => {
+      cleanup();
+      resolve();
+    };
+
+    const handleLoadingError = (event: Event): void => {
+      cleanup();
+      const detail = (event as CustomEvent<PacBeccaLoadingErrorDetail>).detail;
+      reject(new Error(detail?.message ?? START_LOAD_ERROR_STATUS));
+    };
+
+    window.addEventListener(PACBECCA_GAME_READY_EVENT, handleReady);
+    window.addEventListener(PACBECCA_LOADING_ERROR_EVENT, handleLoadingError, { once: true });
+  });
+}
+
+window.addEventListener(PACBECCA_LOADING_PROGRESS_EVENT, (event) => {
+  const detail = (event as CustomEvent<PacBeccaLoadingProgressDetail>).detail;
+  if (!detail) {
+    return;
+  }
+
+  updateStartLoadingProgress(detail.message, detail.progress);
+});
 
 function syncGamePauseState(): void {
   if (!game) {
@@ -350,10 +428,7 @@ async function startGame(): Promise<void> {
 }
 
 async function loadAndStartGame(): Promise<void> {
-  startButton?.setAttribute("disabled", "true");
-  if (startButton) {
-    startButton.textContent = START_BUTTON_LOADING_LABEL;
-  }
+  setStartLoadingState(true, START_LOADING_CODE_STATUS, 0.04);
 
   try {
     const [{ default: Phaser }, { PacBeccaScene }] = await Promise.all([
@@ -361,18 +436,18 @@ async function loadAndStartGame(): Promise<void> {
       import("./game/PacBeccaScene")
     ]);
 
+    updateStartLoadingProgress(START_LOADING_ASSETS_STATUS, 0.16);
+    const gameReady = waitForGameReady();
     game = new Phaser.Game(createGameConfig(Phaser, PacBeccaScene));
-    startScreen?.classList.add("is-hidden");
-    startScreen?.setAttribute("aria-hidden", "true");
-    setPauseButtonState();
-    syncGamePauseState();
-    scheduleViewportRefresh();
+    await gameReady;
+    updateStartLoadingProgress(START_READY_TO_PLAY_STATUS, 1);
+    revealLoadedGame();
   } catch (error) {
+    game?.destroy(true);
+    game = null;
     gameLoadPromise = null;
-    startButton?.removeAttribute("disabled");
-    if (startButton) {
-      startButton.textContent = START_BUTTON_LABEL;
-    }
+    setPauseButtonState();
+    setStartLoadingState(false, START_LOAD_ERROR_STATUS, 0);
     throw error;
   }
 }
@@ -414,7 +489,9 @@ function resetGameFromUi(): void {
 }
 
 startButton?.addEventListener("click", () => {
-  void startGame();
+  void startGame().catch((error: unknown) => {
+    console.error(error);
+  });
 });
 
 resetButton?.addEventListener("click", () => {
@@ -429,6 +506,7 @@ leaderboardRestartButton?.addEventListener("click", () => {
 
 setPauseButtonState();
 setSoundButtonState();
+updateStartLoadingProgress(START_READY_STATUS, 0);
 
 if (!startButton || !startScreen) {
   void startGame();
