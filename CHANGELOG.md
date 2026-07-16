@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4 - 2026-07-16
+
+- Added a local production deployment helper that validates, builds with the GitHub Pages base path, pushes `main`, watches CI/Pages, and smoke-checks the live site.
+
 ## 0.5.3 - 2026-07-16
 
 - Added a real start loading screen that stays visible while Phaser, Becca, and all rage images load.

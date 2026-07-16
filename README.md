@@ -88,7 +88,7 @@ For Squarespace page-code output, run `pnpm build:squarespace:embed`. Set `PACBE
 
 ## Release Versioning
 
-PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.3`.
+PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.4`.
 
 Before every production code push to `main`, update `package.json`, `VERSION`, and `CHANGELOG.md`, then run:
 
@@ -105,5 +105,6 @@ pnpm version:check
 pnpm test
 pnpm build
 pnpm check
+pnpm deploy:production
 pnpm leaderboard:deploy
 ```

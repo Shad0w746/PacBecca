@@ -1,6 +1,6 @@
 {
   "name": "pacbecca",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "description": "PacBecca, an original maze-chase browser game inspired by classic arcade design.",
   "type": "module",
@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "version:check": "node scripts/check-version.mjs",
     "check": "pnpm version:check && pnpm test && pnpm build",
+    "deploy:production": "node scripts/deploy-production.mjs",
     "leaderboard:dev": "pnpm dlx wrangler dev --config workers/leaderboard/wrangler.toml",
     "leaderboard:deploy": "pnpm dlx wrangler deploy --config workers/leaderboard/wrangler.toml"
   },

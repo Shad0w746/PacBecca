@@ -5,7 +5,7 @@ PacBecca uses project-wide semantic versioning in `MAJOR.MINOR.PATCH` format.
 Current release:
 
 ```text
-0.5.0
+0.5.4
 ```
 
 ## Release Rule
@@ -21,6 +21,14 @@ Before pushing production code:
 5. Run `pnpm version:check`.
 
 The CI and GitHub Pages workflows run the version check so the project cannot deploy with mismatched version files.
+
+For the full production path after a release commit is ready, run:
+
+```powershell
+pnpm deploy:production
+```
+
+That helper runs the local checks, performs a GitHub Pages base-path production build, pushes `main`, waits for CI and the Pages deploy, and smoke-checks the live site.
 
 ## Version Meaning
 
