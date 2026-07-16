@@ -11,6 +11,7 @@ pnpm dev
 
 Open the local URL Vite prints, usually `http://127.0.0.1:5173/`.
 Press `Start Game` to begin after the page loads.
+The start screen loads first, then the Phaser game engine and scene load when play starts.
 
 ## Controls
 
@@ -34,7 +35,8 @@ The player avatar uses `public/assets/becca-head-sheet.png`, a six-frame transpa
 - Becca Burst briefly makes every active ghost vulnerable.
 - Finish a run to submit your name to the top-10 leaderboard in `public/leaderboard.txt`.
 - Open the collapsible rules menu to review the objective, rules, and leaderboard.
-- Sound effects are synthesized in the browser and can be muted with the Sound On/Off control. The preference is stored locally in the browser.
+- Sound effects and simple gameplay music are synthesized in the browser and can be muted with the Sound On/Off control. The preference is stored locally in the browser.
+- The Phaser game engine is lazy-loaded from the start screen so the first page render stays lighter.
 - The five ghosts have distinct target-tile behaviors:
   - Frosty: direct pursuer.
   - Megasen: ambushes ahead of Becca.
@@ -86,7 +88,7 @@ For Squarespace page-code output, run `pnpm build:squarespace:embed`. Set `PACBE
 
 ## Release Versioning
 
-PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.1`.
+PacBecca uses full `MAJOR.MINOR.PATCH` project versioning. The current release is shown in the top-right game badge as `v0.5.2`.
 
 Before every production code push to `main`, update `package.json`, `VERSION`, and `CHANGELOG.md`, then run:
 

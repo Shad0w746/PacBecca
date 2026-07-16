@@ -1,33 +1,27 @@
-import Phaser from "phaser";
+import type Phaser from "phaser";
 import "./styles.css";
 import packageJson from "../package.json";
-import { PacBeccaScene } from "./game/PacBeccaScene";
 import {
+  PACBECCA_AUDIO_PAUSE_EVENT,
   PACBECCA_SOUND_CHANGE_EVENT,
   getSoundToggleLabel,
+  primePacBeccaAudio,
   readStoredSoundEnabled,
   writeStoredSoundEnabled
 } from "./game/sound";
 import { setupLeaderboard } from "./ui/leaderboard";
 
-const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
-  parent: "game",
-  backgroundColor: "#15151f",
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 960,
-    height: 640
-  },
-  render: {
-    antialias: true,
-    pixelArt: false
-  },
-  scene: [PacBeccaScene]
-};
+type PhaserRuntime = typeof Phaser;
+type PhaserGame = Phaser.Game;
+type PhaserGameConfig = Phaser.Types.Core.GameConfig;
+type PacBeccaSceneConstructor = typeof import("./game/PacBeccaScene").PacBeccaScene;
 
-let game: Phaser.Game | null = null;
+const GAME_SCENE_KEY = "pacbecca";
+const START_BUTTON_LABEL = "Start Game";
+const START_BUTTON_LOADING_LABEL = "Loading...";
+
+let game: PhaserGame | null = null;
+let gameLoadPromise: Promise<void> | null = null;
 const startScreen = document.querySelector<HTMLElement>("#start-screen");
 const startButton = document.querySelector<HTMLButtonElement>("#start-game");
 const resetButton = document.querySelector<HTMLButtonElement>("#reset-game");
@@ -136,10 +130,17 @@ function syncGamePauseState(): void {
 
   const overlayOpen = Boolean(infoOverlay && !infoOverlay.hidden);
   if (userPaused || overlayOpen) {
-    game.scene.pause("pacbecca");
+    game.scene.pause(GAME_SCENE_KEY);
   } else {
-    game.scene.resume("pacbecca");
+    game.scene.resume(GAME_SCENE_KEY);
   }
+  window.dispatchEvent(
+    new CustomEvent(PACBECCA_AUDIO_PAUSE_EVENT, {
+      detail: {
+        paused: userPaused || overlayOpen
+      }
+    })
+  );
   setPauseButtonState();
 }
 
@@ -235,7 +236,7 @@ leaderboardToggle?.addEventListener("click", () =>
 infoClose?.addEventListener("click", () => setInfoOverlay(false));
 pauseToggle?.addEventListener("click", () => {
   if (!game) {
-    startGame();
+    void startGame();
   }
   setUserPaused(!userPaused);
   pauseToggle.blur();
@@ -304,7 +305,7 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     event.stopPropagation();
     setInfoOverlay(false, { restoreFocus: false });
-    startGame();
+    void startGame();
   }
 });
 
@@ -334,23 +335,74 @@ window.addEventListener("message", (event) => {
   }
 });
 
-function startGame(): void {
+async function startGame(): Promise<void> {
   if (game) {
     return;
   }
 
-  game = new Phaser.Game(config);
-  startScreen?.classList.add("is-hidden");
-  startScreen?.setAttribute("aria-hidden", "true");
+  if (gameLoadPromise) {
+    return gameLoadPromise;
+  }
+
+  primePacBeccaAudio(soundEnabled);
+  gameLoadPromise = loadAndStartGame();
+  return gameLoadPromise;
+}
+
+async function loadAndStartGame(): Promise<void> {
   startButton?.setAttribute("disabled", "true");
-  setPauseButtonState();
-  scheduleViewportRefresh();
+  if (startButton) {
+    startButton.textContent = START_BUTTON_LOADING_LABEL;
+  }
+
+  try {
+    const [{ default: Phaser }, { PacBeccaScene }] = await Promise.all([
+      import("phaser") as Promise<{ default: PhaserRuntime }>,
+      import("./game/PacBeccaScene")
+    ]);
+
+    game = new Phaser.Game(createGameConfig(Phaser, PacBeccaScene));
+    startScreen?.classList.add("is-hidden");
+    startScreen?.setAttribute("aria-hidden", "true");
+    setPauseButtonState();
+    syncGamePauseState();
+    scheduleViewportRefresh();
+  } catch (error) {
+    gameLoadPromise = null;
+    startButton?.removeAttribute("disabled");
+    if (startButton) {
+      startButton.textContent = START_BUTTON_LABEL;
+    }
+    throw error;
+  }
+}
+
+function createGameConfig(
+  Phaser: PhaserRuntime,
+  PacBeccaScene: PacBeccaSceneConstructor
+): PhaserGameConfig {
+  return {
+    type: Phaser.AUTO,
+    parent: "game",
+    backgroundColor: "#15151f",
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: 960,
+      height: 640
+    },
+    render: {
+      antialias: true,
+      pixelArt: false
+    },
+    scene: [PacBeccaScene]
+  };
 }
 
 function resetGameFromUi(): void {
   if (!game) {
     setRestartPromptVisible(false);
-    startGame();
+    void startGame();
     return;
   }
 
@@ -361,7 +413,9 @@ function resetGameFromUi(): void {
   window.dispatchEvent(new CustomEvent("pacbecca:reset-game"));
 }
 
-startButton?.addEventListener("click", startGame);
+startButton?.addEventListener("click", () => {
+  void startGame();
+});
 
 resetButton?.addEventListener("click", () => {
   resetGameFromUi();
@@ -377,5 +431,5 @@ setPauseButtonState();
 setSoundButtonState();
 
 if (!startButton || !startScreen) {
-  startGame();
+  void startGame();
 }

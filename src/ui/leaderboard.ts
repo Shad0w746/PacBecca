@@ -23,7 +23,7 @@ declare global {
 }
 
 const STORAGE_KEY = "pacbecca.leaderboard.v1";
-const appBaseUrl = (import.meta as unknown as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
+const appBaseUrl = import.meta.env.BASE_URL;
 const LEADERBOARD_FILE_URL = `${appBaseUrl.endsWith("/") ? appBaseUrl : `${appBaseUrl}/`}leaderboard.txt`;
 const LOCAL_LEADERBOARD_API_URL = "/api/leaderboard";
 const LEADERBOARD_HEADER = "name\tscore\tlevel\twon\tcreatedAt";

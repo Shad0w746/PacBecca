@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.2 - 2026-07-16
+
+- Added a simple looping background music layer during active gameplay.
+- Added a brighter temporary power-mode music loop while ghosts are vulnerable or hypno mode is active.
+- Made yellow-can pickup sounds more celebratory and paused music loops when the rules, leaderboard, or pause overlay is active.
+- Lazy-loaded Phaser and the game scene so the heavier game code downloads only when play starts.
+- Fixed game asset URLs so Becca and rage images load correctly from the GitHub Pages `/PacBecca/` base path.
+
 ## 0.5.1 - 2026-07-15
 
 - Added procedural arcade sound effects for pickups, Becca Burst, ghost eats, hits, rage moments, level clears, victory, and game over.

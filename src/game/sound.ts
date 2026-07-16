@@ -1,4 +1,5 @@
 export const PACBECCA_SOUND_CHANGE_EVENT = "pacbecca:sound-enabled-change";
+export const PACBECCA_AUDIO_PAUSE_EVENT = "pacbecca:audio-paused-change";
 export const PACBECCA_SOUND_STORAGE_KEY = "pacbecca:sound-enabled";
 
 export type PacBeccaSoundName =
@@ -7,6 +8,7 @@ export type PacBeccaSoundName =
   | "levelStart"
   | "pellet"
   | "power"
+  | "powerModeStart"
   | "heart"
   | "burst"
   | "ghost"
@@ -44,6 +46,8 @@ interface SoundCue {
 
 const MASTER_GAIN = 0.34;
 const MIN_GAIN = 0.0001;
+const BACKGROUND_MUSIC_STEP_MS = 185;
+const POWER_MODE_STEP_MS = 116;
 
 const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   ui: {
@@ -69,11 +73,20 @@ const SOUND_CUES: Record<PacBeccaSoundName, SoundCue> = {
   },
   power: {
     tones: [
-      { durationMs: 120, frequency: 196, endFrequency: 392, gain: 0.09, type: "sawtooth" },
-      { offsetMs: 70, durationMs: 150, frequency: 523.25, endFrequency: 1046.5, gain: 0.08, type: "triangle" },
-      { offsetMs: 140, durationMs: 140, frequency: 1567.98, endFrequency: 1174.66, gain: 0.055, type: "sine" }
+      { durationMs: 90, frequency: 329.63, endFrequency: 493.88, gain: 0.085, type: "triangle" },
+      { offsetMs: 70, durationMs: 95, frequency: 493.88, endFrequency: 659.25, gain: 0.075, type: "triangle" },
+      { offsetMs: 140, durationMs: 110, frequency: 659.25, endFrequency: 987.77, gain: 0.075, type: "square" },
+      { offsetMs: 220, durationMs: 160, frequency: 1318.51, endFrequency: 1975.53, gain: 0.06, type: "sine" }
     ],
-    noise: [{ durationMs: 110, gain: 0.018, filterFrequency: 1400 }]
+    noise: [{ durationMs: 130, gain: 0.018, filterFrequency: 1800 }]
+  },
+  powerModeStart: {
+    tones: [
+      { durationMs: 95, frequency: 587.33, gain: 0.065, type: "triangle" },
+      { offsetMs: 72, durationMs: 95, frequency: 783.99, gain: 0.065, type: "triangle" },
+      { offsetMs: 144, durationMs: 110, frequency: 987.77, gain: 0.065, type: "triangle" },
+      { offsetMs: 224, durationMs: 170, frequency: 1567.98, endFrequency: 1174.66, gain: 0.055, type: "sine" }
+    ]
   },
   heart: {
     tones: [
@@ -147,6 +160,25 @@ type WindowWithWebkitAudio = Window & {
   webkitAudioContext?: new () => AudioContext;
 };
 
+interface AudioRuntime {
+  context: AudioContext;
+  master: GainNode;
+}
+
+let sharedContext: AudioContext | undefined;
+let sharedMaster: GainNode | undefined;
+
+export function primePacBeccaAudio(enabled = readStoredSoundEnabled()): void {
+  if (!enabled) {
+    return;
+  }
+
+  const runtime = ensureAudioRuntime(enabled);
+  if (runtime?.context.state === "suspended") {
+    void runtime.context.resume();
+  }
+}
+
 export function normalizeStoredSoundEnabled(value: string | null): boolean {
   if (value === null) {
     return true;
@@ -191,23 +223,95 @@ export class PacBeccaAudio {
   private master?: GainNode;
   private noiseBuffer?: AudioBuffer;
   private enabled = readStoredSoundEnabled();
+  private gameplayPaused = false;
+  private backgroundMusicRequested = false;
+  private backgroundMusicTimerId?: number;
+  private backgroundMusicStep = 0;
+  private powerModeTimerId?: number;
+  private powerModeStopTimerId?: number;
+  private powerModeStep = 0;
+  private powerModeUntilMs = 0;
+  private powerModePausedRemainingMs = 0;
   private readonly lastPlayedAt = new Map<PacBeccaSoundName, number>();
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     writeStoredSoundEnabled(enabled);
 
+    if (!enabled) {
+      this.clearBackgroundMusicTimer();
+      this.clearPowerModeTimer();
+    }
+
     if (!this.context || !this.master) {
       return;
     }
 
-    const now = this.context.currentTime;
-    this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setTargetAtTime(enabled ? MASTER_GAIN : 0, now, 0.02);
-
-    if (enabled && this.context.state === "suspended") {
-      void this.context.resume();
+    const runtime = getAudioRuntime();
+    if (!runtime) {
+      return;
     }
+
+    const now = runtime.context.currentTime;
+    runtime.master.gain.cancelScheduledValues(now);
+    runtime.master.gain.setTargetAtTime(enabled ? MASTER_GAIN : 0, now, 0.02);
+
+    if (enabled && runtime.context.state === "suspended") {
+      void runtime.context.resume();
+    }
+
+    if (enabled) {
+      this.maybeStartBackgroundMusic();
+      this.maybeStartPowerModeLoop();
+    }
+  }
+
+  setGameplayPaused(paused: boolean): void {
+    this.gameplayPaused = paused;
+
+    if (paused) {
+      this.powerModePausedRemainingMs = Math.max(0, this.powerModeUntilMs - performance.now());
+      this.clearBackgroundMusicTimer();
+      this.clearPowerModeTimer();
+      this.clearPowerModeStopTimer();
+      return;
+    }
+
+    if (this.powerModePausedRemainingMs > 0) {
+      this.powerModeUntilMs = Math.max(
+        this.powerModeUntilMs,
+        performance.now() + this.powerModePausedRemainingMs
+      );
+      this.powerModePausedRemainingMs = 0;
+      this.schedulePowerModeStop();
+    }
+
+    this.maybeStartBackgroundMusic();
+    this.maybeStartPowerModeLoop();
+  }
+
+  startBackgroundMusic(): void {
+    this.backgroundMusicRequested = true;
+    this.maybeStartBackgroundMusic();
+  }
+
+  stopBackgroundMusic(): void {
+    this.backgroundMusicRequested = false;
+    this.clearBackgroundMusicTimer();
+  }
+
+  startPowerMode(durationMs: number): void {
+    this.powerModeUntilMs = Math.max(this.powerModeUntilMs, performance.now() + durationMs);
+    this.play("powerModeStart");
+    this.maybeStartPowerModeLoop();
+    this.schedulePowerModeStop();
+  }
+
+  stopPowerMode(): void {
+    this.powerModeUntilMs = 0;
+    this.powerModePausedRemainingMs = 0;
+    this.clearPowerModeTimer();
+    this.clearPowerModeStopTimer();
   }
 
   play(name: PacBeccaSoundName): void {
@@ -231,15 +335,204 @@ export class PacBeccaAudio {
   }
 
   dispose(): void {
+    this.stopBackgroundMusic();
+    this.stopPowerMode();
     this.lastPlayedAt.clear();
-    if (!this.context) {
-      return;
-    }
-
-    void this.context.close();
     this.context = undefined;
     this.master = undefined;
     this.noiseBuffer = undefined;
+  }
+
+  private maybeStartBackgroundMusic(): void {
+    if (
+      !this.enabled ||
+      this.gameplayPaused ||
+      !this.backgroundMusicRequested ||
+      this.backgroundMusicTimerId !== undefined
+    ) {
+      return;
+    }
+
+    const context = this.ensureContext();
+    if (!context || !this.master) {
+      return;
+    }
+
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+
+    this.tickBackgroundMusic();
+    this.backgroundMusicTimerId = window.setInterval(
+      () => this.tickBackgroundMusic(),
+      BACKGROUND_MUSIC_STEP_MS
+    );
+  }
+
+  private tickBackgroundMusic(): void {
+    if (!this.enabled || this.gameplayPaused || !this.backgroundMusicRequested) {
+      return;
+    }
+
+    const context = this.ensureContext();
+    if (!context || !this.master) {
+      return;
+    }
+
+    const step = this.backgroundMusicStep % 16;
+    const startAt = context.currentTime + 0.018;
+    const bassNotes = [130.81, 164.81, 196, 164.81];
+    const melodyNotes = [523.25, 659.25, 783.99, 659.25, 880, 783.99];
+    const melodySteps = [0, 3, 6, 9, 12, 15];
+
+    if (step % 4 === 0) {
+      this.playTone(
+        context,
+        {
+          durationMs: 125,
+          frequency: bassNotes[Math.floor(step / 4)],
+          gain: 0.022,
+          type: "triangle",
+          attackMs: 14
+        },
+        startAt
+      );
+    }
+
+    const melodyIndex = melodySteps.indexOf(step);
+    if (melodyIndex >= 0) {
+      this.playTone(
+        context,
+        {
+          durationMs: 86,
+          frequency: melodyNotes[melodyIndex],
+          gain: 0.018,
+          type: "sine",
+          attackMs: 10
+        },
+        startAt + 0.012
+      );
+    }
+
+    if ([2, 7, 10, 14].includes(step)) {
+      this.playNoise(
+        context,
+        {
+          durationMs: 28,
+          gain: 0.0045,
+          filterFrequency: 2400
+        },
+        startAt
+      );
+    }
+
+    this.backgroundMusicStep += 1;
+  }
+
+  private maybeStartPowerModeLoop(): void {
+    if (
+      !this.enabled ||
+      this.gameplayPaused ||
+      this.powerModeUntilMs <= performance.now() ||
+      this.powerModeTimerId !== undefined
+    ) {
+      return;
+    }
+
+    const context = this.ensureContext();
+    if (!context || !this.master) {
+      return;
+    }
+
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+
+    this.tickPowerModeLoop();
+    this.powerModeTimerId = window.setInterval(
+      () => this.tickPowerModeLoop(),
+      POWER_MODE_STEP_MS
+    );
+  }
+
+  private tickPowerModeLoop(): void {
+    if (!this.enabled || this.gameplayPaused || this.powerModeUntilMs <= performance.now()) {
+      this.stopPowerMode();
+      return;
+    }
+
+    const context = this.ensureContext();
+    if (!context || !this.master) {
+      return;
+    }
+
+    const step = this.powerModeStep % 8;
+    const sparkleNotes = [987.77, 1174.66, 1318.51, 1567.98, 1318.51, 1760, 1567.98, 1174.66];
+    const startAt = context.currentTime + 0.01;
+
+    this.playTone(
+      context,
+      {
+        durationMs: 72,
+        frequency: sparkleNotes[step],
+        gain: step % 2 === 0 ? 0.025 : 0.019,
+        type: "triangle",
+        attackMs: 4
+      },
+      startAt
+    );
+
+    if (step === 0 || step === 4) {
+      this.playTone(
+        context,
+        {
+          durationMs: 105,
+          frequency: 493.88,
+          gain: 0.014,
+          type: "square",
+          attackMs: 8
+        },
+        startAt
+      );
+    }
+
+    this.powerModeStep += 1;
+  }
+
+  private clearBackgroundMusicTimer(): void {
+    if (this.backgroundMusicTimerId === undefined) {
+      return;
+    }
+
+    window.clearInterval(this.backgroundMusicTimerId);
+    this.backgroundMusicTimerId = undefined;
+  }
+
+  private clearPowerModeTimer(): void {
+    if (this.powerModeTimerId === undefined) {
+      return;
+    }
+
+    window.clearInterval(this.powerModeTimerId);
+    this.powerModeTimerId = undefined;
+  }
+
+  private clearPowerModeStopTimer(): void {
+    if (this.powerModeStopTimerId === undefined) {
+      return;
+    }
+
+    window.clearTimeout(this.powerModeStopTimerId);
+    this.powerModeStopTimerId = undefined;
+  }
+
+  private schedulePowerModeStop(): void {
+    this.clearPowerModeStopTimer();
+    const remainingMs = Math.max(0, this.powerModeUntilMs - performance.now());
+    this.powerModeStopTimerId = window.setTimeout(() => {
+      this.powerModeStopTimerId = undefined;
+      this.stopPowerMode();
+    }, remainingMs + POWER_MODE_STEP_MS);
   }
 
   private ensureContext(): AudioContext | null {
@@ -251,20 +544,14 @@ export class PacBeccaAudio {
       return null;
     }
 
-    const AudioContextCtor =
-      window.AudioContext ?? (window as WindowWithWebkitAudio).webkitAudioContext;
-    if (!AudioContextCtor) {
+    const runtime = ensureAudioRuntime(this.enabled);
+    if (!runtime) {
       return null;
     }
 
-    const context = new AudioContextCtor();
-    const master = context.createGain();
-    master.gain.value = this.enabled ? MASTER_GAIN : 0;
-    master.connect(context.destination);
-
-    this.context = context;
-    this.master = master;
-    return context;
+    this.context = runtime.context;
+    this.master = runtime.master;
+    return runtime.context;
   }
 
   private isThrottled(
@@ -378,4 +665,46 @@ function getLocalStorage(): SoundStorage | null {
   } catch {
     return null;
   }
+}
+
+function getAudioRuntime(): AudioRuntime | null {
+  if (!sharedContext || !sharedMaster) {
+    return null;
+  }
+
+  return {
+    context: sharedContext,
+    master: sharedMaster
+  };
+}
+
+function ensureAudioRuntime(enabled: boolean): AudioRuntime | null {
+  const existingRuntime = getAudioRuntime();
+  if (existingRuntime) {
+    existingRuntime.master.gain.value = enabled ? MASTER_GAIN : 0;
+    return existingRuntime;
+  }
+
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const AudioContextCtor =
+    window.AudioContext ?? (window as WindowWithWebkitAudio).webkitAudioContext;
+  if (!AudioContextCtor) {
+    return null;
+  }
+
+  const context = new AudioContextCtor();
+  const master = context.createGain();
+  master.gain.value = enabled ? MASTER_GAIN : 0;
+  master.connect(context.destination);
+
+  sharedContext = context;
+  sharedMaster = master;
+
+  return {
+    context,
+    master
+  };
 }
